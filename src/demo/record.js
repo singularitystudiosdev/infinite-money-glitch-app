@@ -5,6 +5,9 @@
 // something to hand over, the download once the run is done, or the retry
 // if it failed. The recording browser is told it is one
 // (window.__demoRecording), so the button never appears in its own video.
+// The button only exists where a recorder does: serve.mjs answers
+// GET /api/demo/record, a static host (the public GitHub Pages copy) does
+// not, and there the demo plays with nothing over it.
 import { icon } from "../icons.js";
 import { escapeHtml } from "../util.js";
 
@@ -12,21 +15,38 @@ const RED_DOT = `<svg class="icon-16 demo-record__dot" viewBox="0 0 24 24" aria-
 
 let button = null;
 let poll = null;
+let mounting = 0;
 
 export function mountRecordButton() {
   unmountRecordButton();
   if (window.__demoRecording) return;
-  button = document.createElement("div");
-  button.className = "demo-record";
-  document.body.append(button);
-  idle();
+  const attempt = ++mounting;
+  hasRecorder().then((ok) => {
+    // the route may have changed while the probe was out
+    if (!ok || attempt !== mounting) return;
+    button = document.createElement("div");
+    button.className = "demo-record";
+    document.body.append(button);
+    idle();
+  });
 }
 
 export function unmountRecordButton() {
+  mounting++;
   clearInterval(poll);
   poll = null;
   button?.remove();
   button = null;
+}
+
+async function hasRecorder() {
+  try {
+    const r = await fetch("/api/demo/record", { signal: AbortSignal.timeout(2500) });
+    if (!r.ok) return false;
+    return (await r.json()).recorder === true;
+  } catch {
+    return false;
+  }
 }
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;

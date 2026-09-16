@@ -82,6 +82,9 @@ const json = (res, code, body) => {
 async function recorderRoute(req, res, url) {
   const [, id, file] = url.pathname.match(/^\/api\/demo\/record(?:\/([\w-]+))?(?:\/([\w.-]+))?$/) || [];
   if (!id && req.method === "POST") return json(res, 202, startRecording());
+  // the page asks here whether a recorder exists before it shows the button:
+  // a static host (GitHub Pages) answers this address with a 404
+  if (!id) return json(res, 200, { recorder: true, running: running && jobs.get(running).state === "running" ? running : null });
   const job = jobs.get(id);
   if (!job) return json(res, 404, { error: "no such recording" });
   if (!file) return json(res, 200, job);
