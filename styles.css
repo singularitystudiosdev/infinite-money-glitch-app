@@ -1,0 +1,389 @@
+/* styles.css: page chrome for the button gallery.
+   Tokens copied from design-tokens/dist/tokens.css (spacing, radius, shadow,
+   duration, easing, state layers). Color slots are per app; the six hex values
+   below are the look plan. Everything else derives from them with color-mix. */
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&display=swap");
+
+:root {
+  /* look plan */
+  --hex-canvas: #eef0f3;
+  --hex-surface: #ffffff;
+  --hex-ink: #14171c;
+  --hex-muted: #5f6672;
+  --hex-hairline: #d4d8de;
+  /* neutral accent: ink in light, near-white in dark (set per theme below) */
+  /* status token, bound to the destructive role only (anti-generic rule 19) */
+  --hex-danger: #b42318;
+
+  /* spacing ramp (design-tokens) */
+  --spacing-2: 2px;
+  --spacing-4: 4px;
+  --spacing-6: 6px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-72: 72px;
+
+  /* radius (design-tokens) */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  /* inner-element radius: 24px mark inside a pill chip (concentricity) */
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-full: 9999px;
+
+  /* shadows (design-tokens, Fluent low ramp) */
+  --shadow-2: rgba(0, 0, 0, 0.14) 0px 1px 2px 0px, rgba(0, 0, 0, 0.14) 0px 1px 2px 0px;
+  --shadow-4: rgba(0, 0, 0, 0.14) 0px 2px 4px 0px, rgba(0, 0, 0, 0.14) 0px 2px 4px 0px;
+  --shadow-8: rgba(0, 0, 0, 0.14) 0px 4px 8px 0px, rgba(0, 0, 0, 0.14) 0px 4px 8px 0px;
+  --shadow-16: rgba(0, 0, 0, 0.14) 0px 8px 16px 0px, rgba(0, 0, 0, 0.14) 0px 8px 16px 0px;
+
+  /* durations and easings (design-tokens) */
+  --duration-100: 100ms;
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-600: 600ms;
+  --duration-1000: 1000ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --spring-expressive-fast-spatial: 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9);
+
+  /* M3 state-layer opacities (design-tokens) */
+  --state-layer-hover: 0.08;
+  --state-layer-focus: 0.1;
+  --state-layer-press: 0.1;
+
+  /* type ramp, named by use */
+  --font-display: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-hero: 600 56px / 1 var(--font-display);
+  --type-title: 500 16px / 24px var(--font-body);
+  --type-body: 400 14px / 20px var(--font-body);
+  --type-label: 500 14px / 20px var(--font-body);
+  --type-meta: 400 12px / 16px var(--font-body);
+
+  /* semantic color slots (light) */
+  --color-canvas: var(--hex-canvas);
+  --color-surface: var(--hex-surface);
+  --color-ink: var(--hex-ink);
+  --color-text-secondary: var(--hex-muted);
+  --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 55%, var(--hex-canvas));
+  --color-hairline: var(--hex-hairline);
+  --color-hairline-strong: color-mix(in oklab, var(--hex-hairline) 60%, var(--hex-muted));
+  /* neutral accent: an ink fill with a canvas label, no hue */
+  --color-accent: var(--hex-ink);
+  --color-on-accent: var(--hex-canvas);
+  --color-accent-ink: var(--hex-ink);
+  --color-danger: var(--hex-danger);
+  --color-on-danger: var(--hex-surface);
+  --color-stage-dark: var(--hex-ink);
+  --color-focus-ring: var(--hex-ink);
+  /* status tokens, bound to status only (anti-generic rule 19) */
+  --color-status-ok: oklch(55% 0.15 150);
+  --color-status-warn: oklch(62% 0.15 70);
+  /* a true orange, its own kind beside ok and warn: something needs you */
+  --color-status-needs: oklch(68% 0.19 52);
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-canvas: var(--hex-ink);
+  --color-surface: color-mix(in oklab, var(--hex-ink) 88%, var(--hex-surface));
+  --color-ink: var(--hex-canvas);
+  --color-text-secondary: color-mix(in oklab, var(--hex-canvas) 60%, var(--hex-muted));
+  --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 70%, var(--hex-ink));
+  --color-hairline: color-mix(in oklab, var(--hex-ink) 76%, var(--hex-surface));
+  --color-hairline-strong: color-mix(in oklab, var(--hex-ink) 55%, var(--hex-surface));
+  /* neutral accent: an off-white fill with an ink label, no hue */
+  --color-accent: var(--hex-canvas);
+  --color-on-accent: var(--hex-ink);
+  --color-accent-ink: var(--hex-canvas);
+  --color-danger: var(--hex-danger);
+  --color-on-danger: var(--hex-surface);
+  --color-stage-dark: color-mix(in oklab, var(--hex-ink) 70%, black);
+  --color-focus-ring: var(--hex-canvas);
+  --color-status-ok: oklch(74% 0.15 150);
+  --color-status-warn: oklch(78% 0.14 70);
+  --shadow-2: rgba(0, 0, 0, 0.28) 0px 1px 2px 0px, rgba(0, 0, 0, 0.14) 0px 1px 2px 0px;
+  --shadow-4: rgba(0, 0, 0, 0.28) 0px 2px 4px 0px, rgba(0, 0, 0, 0.14) 0px 2px 4px 0px;
+  --shadow-8: rgba(0, 0, 0, 0.28) 0px 4px 8px 0px, rgba(0, 0, 0, 0.14) 0px 4px 8px 0px;
+  --shadow-16: rgba(0, 0, 0, 0.28) 0px 8px 16px 0px, rgba(0, 0, 0, 0.14) 0px 8px 16px 0px;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font: var(--type-body);
+  text-wrap: pretty;
+  -webkit-font-smoothing: antialiased;
+}
+
+svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* focus ring: 2px at 3:1 against the unfocused state (WCAG 2.2 SC 2.4.13) */
+:where(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--spacing-48) var(--spacing-24) var(--spacing-72);
+}
+
+.masthead {
+  display: grid;
+  gap: var(--spacing-16);
+  max-width: 60ch;
+  margin-bottom: var(--spacing-48);
+}
+
+.masthead h1 {
+  margin: 0;
+  font: var(--type-hero);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.masthead p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-width: 60ch;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-8);
+  margin: 0 calc(var(--spacing-24) * -1) var(--spacing-24);
+  padding: var(--spacing-12) var(--spacing-24);
+  background: color-mix(in oklab, var(--color-canvas) 92%, transparent);
+  border-block: 1px solid var(--color-hairline);
+}
+
+.toolbar__spacer {
+  flex: 1;
+}
+
+.toolbar__count {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  padding-inline: var(--spacing-8);
+}
+
+/* a visible build marker: confirms a deploy actually reached the page,
+   distinct from the element count which never changes turn to turn */
+.toolbar__version {
+  color: var(--color-text-quaternary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  padding-inline: var(--spacing-8);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-height: 32px;
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+.theme-toggle .icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: block;
+}
+
+/* the specimen sheet: a hairline grid, not a card kit */
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--color-hairline);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-16);
+  overflow: hidden;
+}
+
+.specimen {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  background: var(--color-surface);
+}
+
+.specimen--wide {
+  grid-column: span 2;
+}
+
+/* a specimen that needs the whole row, like the dashboard's tile grid */
+.specimen--full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .specimen--wide {
+    grid-column: span 1;
+  }
+}
+
+.specimen__stage {
+  display: grid;
+  place-items: center;
+  min-height: 152px;
+  padding: var(--spacing-32) var(--spacing-24);
+  background: var(--color-surface);
+}
+
+.specimen__stage > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.specimen__meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "name copy"
+    "index copy"
+    "note note";
+  align-items: center;
+  column-gap: var(--spacing-12);
+  row-gap: var(--spacing-2);
+  padding: var(--spacing-12) var(--spacing-16) var(--spacing-16);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.specimen__name {
+  grid-area: name;
+  margin: 0;
+  font: var(--type-title);
+}
+
+.specimen__index {
+  grid-area: index;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* two lines reserved so every tile in a row shares one height */
+.specimen__note {
+  grid-area: note;
+  min-height: 40px;
+  margin: var(--spacing-4) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.specimen__copy {
+  grid-area: copy;
+  background: transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.status {
+  position: fixed;
+  inset-inline: 0;
+  bottom: var(--spacing-24);
+  width: max-content;
+  margin: 0 auto;
+  padding: var(--spacing-8) var(--spacing-16);
+  border-radius: var(--radius-8);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font: var(--type-label);
+  box-shadow: var(--shadow-8);
+  opacity: 0;
+  translate: 0 var(--spacing-8);
+  transition: opacity var(--duration-200) var(--ease-standard),
+    translate var(--duration-200) var(--ease-standard);
+  pointer-events: none;
+}
+
+.status[data-visible="true"] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (pointer: coarse) {
+  .theme-toggle {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--spacing-32) var(--spacing-16) var(--spacing-64);
+  }
+
+  .masthead h1 {
+    font-size: 40px;
+  }
+
+  .toolbar {
+    margin-inline: calc(var(--spacing-16) * -1);
+    padding-inline: var(--spacing-16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status {
+    transition: none;
+  }
+}

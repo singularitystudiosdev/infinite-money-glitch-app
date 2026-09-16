@@ -1,0 +1,647 @@
+/* demo.css: the scripted demo run (src/demo). The synthetic pointer, the
+   in-app browser window, the thread pieces the run draws that the chat
+   does not (tool rows, notes, screenshots, day marks, video cards), the
+   speed badge and the sign-off. Everything else is the app's own. */
+
+/* the brand's display face: a heavy condensed grotesque, for the opening
+   line and the wordmark */
+@import url("https://fonts.googleapis.com/css2?family=Anton&display=swap");
+
+/* tokens the milestone and screenshot styles name but the app never
+   defined: they resolve to the app's own slots here */
+:root {
+  --color-panel: var(--color-surface);
+  --color-text-primary: var(--color-ink);
+  --color-text-tertiary: color-mix(in oklab, var(--hex-muted) 75%, var(--hex-canvas));
+  --color-line: var(--color-hairline);
+  --spacing-3: 6px;
+  --spacing-5: 10px;
+}
+
+/* ---------- the opening: a white page, the box, one line ---------- */
+
+:root {
+  --demo-brand: #6e967e; /* the mark's own green; the asked-for #6f967e is one unit off and would seam around it */
+  --demo-display: "Anton", "Bricolage Grotesque", Impact, sans-serif;
+}
+
+/* the page is the brand green and the chrome is not drawn yet: the
+   projects rail and the right rail fold to nothing, the head and the
+   rail's contents are invisible, and the composer sits alone at the foot.
+   Leaving the intro eases every one of those back in */
+body.is-demo-intro {
+  background: var(--demo-brand);
+}
+
+/* the first keystroke: the green gives way to white under the typing */
+body.is-demo-intro.is-demo-white {
+  background: #fff;
+}
+
+body {
+  transition: background-color 1000ms var(--ease-standard);
+}
+
+.app-project.is-demo-intro,
+.app-project.is-demo-intro.is-side-open,
+.app-project.is-demo-intro.is-setup,
+.app-project.is-demo-intro.is-setup.is-side-open {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+  gap: 0;
+}
+
+.app-project .app-project__side,
+.app-project .app-chat__head,
+.app-project .app-project__rail {
+  transition: opacity var(--duration-600) var(--ease-standard);
+}
+
+.app-project.is-demo-intro .app-project__side,
+.app-project.is-demo-intro .app-chat__head,
+.app-project.is-demo-intro .app-project__rail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-project.is-demo-intro .app-chat {
+  position: relative;
+}
+
+.app-project.is-demo-intro .c-composer {
+  border-color: transparent;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 1000ms var(--ease-standard), border-color 1000ms var(--ease-standard);
+}
+
+body.is-demo-white .app-project.is-demo-intro .c-composer {
+  border-color: var(--color-hairline);
+  box-shadow: var(--shadow-4);
+}
+
+/* the quote fills the space above the composer: the line fades in while
+   it eases up from a touch smaller, then the name under it. The first
+   keystroke fades the whole thing away */
+.demo-quote {
+  position: absolute;
+  inset: 0 0 200px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--spacing-20);
+  padding: 0 var(--spacing-24);
+  pointer-events: none;
+  transition: opacity 800ms var(--ease-standard), transform 800ms var(--ease-standard);
+}
+
+/* on the way out the line settles a touch smaller as it fades, so the
+   green can follow it to white without a hard edge */
+.demo-quote.is-out {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.demo-quote__text {
+  max-width: 960px;
+  margin: 0;
+  color: #fff;
+  font: 400 76px / 1.08 var(--demo-display);
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-wrap: balance;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 900ms var(--ease-standard), transform 1100ms var(--ease-emphasized-decelerate);
+}
+
+.demo-quote__text.is-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.demo-quote__by {
+  margin: 0;
+  color: #fff;
+  font: 400 26px / 32px var(--demo-display);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 600ms var(--ease-standard), transform 600ms var(--ease-standard);
+}
+
+.demo-quote__by.is-in {
+  opacity: 0.85;
+  transform: translateY(0);
+}
+
+/* ---------- the sign-off: the mark, then the name ---------- */
+
+.demo-outro {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--spacing-24);
+  background: var(--demo-brand);
+  opacity: 0;
+  transition: opacity 800ms var(--ease-standard);
+}
+
+.demo-outro.is-in {
+  opacity: 1;
+}
+
+.demo-outro__logo {
+  width: 180px;
+  height: 180px;
+  opacity: 0;
+  transform: scale(0.86);
+  transition: opacity 700ms var(--ease-standard), transform 900ms var(--ease-emphasized-decelerate);
+}
+
+.demo-outro__logo.is-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.demo-outro__name {
+  color: #fff;
+  font: 400 104px / 1 var(--demo-display);
+  letter-spacing: 0.01em;
+  opacity: 0;
+  transition: opacity 1000ms var(--ease-standard);
+}
+
+.demo-outro__name.is-in {
+  opacity: 1;
+}
+
+.demo-outro__replay {
+  position: absolute;
+  bottom: var(--spacing-32);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-8) var(--spacing-16);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: #fff;
+  font: var(--type-label);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 500ms var(--ease-standard), background-color var(--duration-150) var(--ease-standard);
+}
+
+.demo-outro__replay.is-in {
+  opacity: 0.85;
+}
+
+.demo-outro__replay:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.demo-outro__replay svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- the pointer ---------- */
+
+.demo-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  width: 22px;
+  height: 22px;
+  margin: -3px 0 0 -3px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  transition: transform var(--duration-300) var(--ease-standard);
+  will-change: transform;
+}
+
+.demo-cursor[hidden] {
+  display: none;
+}
+
+.demo-cursor svg {
+  width: 100%;
+  height: 100%;
+  transition: transform var(--duration-100) var(--ease-standard);
+  transform-origin: 5px 3px;
+}
+
+.demo-cursor.is-down svg {
+  transform: scale(0.86);
+}
+
+/* ---------- the browser window ---------- */
+
+.demo-browser {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--color-surface);
+  transform: translateY(100%);
+  transition: transform var(--duration-600) var(--ease-emphasized-decelerate);
+}
+
+.demo-browser[hidden] {
+  display: none;
+}
+
+.demo-browser.is-open {
+  transform: translateY(0);
+}
+
+.demo-browser__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  height: 44px;
+  padding: 0 var(--spacing-16);
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+}
+
+.demo-browser__dots {
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+.demo-browser__dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-hairline-strong);
+}
+
+.demo-browser__dots i:nth-child(1) { background: #ff5f57; }
+.demo-browser__dots i:nth-child(2) { background: #febc2e; }
+.demo-browser__dots i:nth-child(3) { background: #28c840; }
+
+.demo-browser__back {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.demo-browser__back:hover {
+  background: color-mix(in oklab, var(--hex-ink) 8%, transparent);
+}
+
+.demo-browser__back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.demo-browser__url {
+  flex: 1;
+  min-width: 0;
+  max-width: 640px;
+  padding: var(--spacing-6) var(--spacing-12);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.demo-browser__page {
+  display: grid;
+  background: #0f0f0f;
+}
+
+.demo-browser__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.demo-browser__video {
+  object-fit: contain;
+  background: #000;
+}
+
+/* ---------- pieces in the thread ---------- */
+
+/* a tool call: the app's own row, closed to one line while it runs and
+   opening its result once it is done */
+.demo-tool {
+  max-width: 560px;
+}
+
+.demo-tool > summary {
+  pointer-events: none;
+}
+
+.demo-tool .c-tool__icon {
+  display: grid;
+  place-items: center;
+}
+
+.demo-tool .c-tool__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.demo-tool .c-tool__result {
+  max-width: 100%;
+}
+
+.demo-tool .c-tool__result[hidden] {
+  display: none;
+}
+
+/* what the agent wrote down: a pencil and one line, quiet */
+.demo-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-8);
+  max-width: 560px;
+  padding: var(--spacing-6) var(--spacing-10);
+  border-left: 2px solid var(--color-hairline-strong);
+  color: var(--color-text-secondary);
+  font: var(--type-body);
+  text-wrap: pretty;
+}
+
+.demo-note svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+}
+
+.demo-note strong {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+/* a screenshot: bordered, no wider than the tool rows */
+.demo-shot img {
+  max-width: 560px;
+  height: auto; /* the height attribute reserves space; the width rules the size */
+  aspect-ratio: 1280 / 800;
+  background: var(--color-canvas);
+}
+
+/* a day mark in the montage: a chip between two hairlines */
+.demo-day {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  margin: var(--spacing-8) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.demo-day::before,
+.demo-day::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-hairline);
+}
+
+/* an uploaded video: its real thumbnail, the title, the link */
+.demo-video {
+  gap: var(--spacing-12);
+  max-width: 560px;
+  padding: var(--spacing-8);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  text-decoration: none;
+  color: inherit;
+}
+
+.demo-video__thumb {
+  flex: none;
+  width: 112px;
+  height: 63px;
+  border-radius: var(--radius-6);
+  object-fit: cover;
+  background: var(--color-canvas);
+}
+
+.demo-video .c-milestone__text {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.demo-video__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.demo-video__mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* the voiceover card: a small wave beside the mark while it sits there */
+.c-milestone.is-viewable[data-view-src] {
+  max-width: 560px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+}
+
+.demo-wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+  margin-left: var(--spacing-8);
+}
+
+.demo-wave i {
+  width: 2px;
+  height: 30%;
+  border-radius: 1px;
+  background: var(--color-text-secondary);
+  animation: demo-wave var(--duration-1000) ease-in-out infinite; /* deliberate: a looping wave, not a transition */
+}
+
+.demo-wave i:nth-child(3n) { animation-delay: -0.2s; height: 60%; }
+.demo-wave i:nth-child(3n + 1) { animation-delay: -0.5s; height: 90%; }
+.demo-wave i:nth-child(4n) { animation-delay: -0.8s; height: 45%; }
+
+@keyframes demo-wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+.demo-audio {
+  max-width: 560px;
+}
+
+.demo-audio audio {
+  max-width: 100%;
+}
+
+/* ---------- the head: the speed badge and replay ---------- */
+
+.demo-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-left: auto;
+  padding: 2px var(--spacing-10) 2px var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font: var(--type-meta);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.demo-speed svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---------- the record button: top right, over everything ---------- */
+
+/* above the outro (70) so the run can be recorded again from the sign-off;
+   the recording browser hides it (src/demo/record.js) */
+.demo-record {
+  position: fixed;
+  top: var(--spacing-12);
+  right: var(--spacing-12);
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  transition: opacity var(--duration-150) var(--ease-standard);
+}
+
+/* pressed: gone until the recording has something to hand back */
+.demo-record.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.demo-record__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-height: 32px;
+  padding: 0 var(--spacing-12) 0 var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font: var(--type-meta);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: var(--shadow-8);
+  cursor: pointer;
+  transition: transform var(--duration-150) var(--ease-standard), opacity var(--duration-150) var(--ease-standard);
+}
+
+.demo-record__btn:hover {
+  transform: translateY(-1px);
+}
+
+.demo-record__btn.is-busy {
+  cursor: default;
+}
+
+.demo-record__btn.is-failed {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.demo-record__btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.demo-record__dot {
+  color: #e5484d;
+}
+
+/* the dot breathes while the recording runs */
+.demo-record__btn.is-busy .demo-record__dot {
+  animation: demo-record-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes demo-record-pulse {
+  50% { opacity: 0.35; }
+}
+
+.demo-record__again {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  box-shadow: var(--shadow-8);
+  cursor: pointer;
+}
+
+.demo-record__again svg {
+  width: 14px;
+  height: 14px;
+}
+
+.demo-replay {
+  margin-left: auto;
+  gap: var(--spacing-6);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.demo-replay svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-cursor,
+  .demo-browser {
+    transition: none;
+  }
+
+  .demo-wave i {
+    animation: none;
+  }
+
+  .demo-quote,
+  .demo-quote__text,
+  .demo-quote__by,
+  .demo-outro,
+  .demo-outro__logo,
+  .demo-outro__name,
+  .demo-outro__replay,
+  body,
+  .app-project .app-project__side,
+  .app-project .app-chat__head,
+  .app-project .app-project__rail {
+    transition: none;
+  }
+}

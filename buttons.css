@@ -1,0 +1,155 @@
+/* buttons.css: the Paper button. Surface fill, hairline border, Fluent low
+   ramp: shadow 4 at rest, a 1px lift to shadow 8 on hover, shadow 2 on
+   press. The icon role is a 40px circle; the quiet role drops the fill and
+   the shadow; the loading role carries a spinner. Every number is a token
+   from styles.css. */
+
+.btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
+  min-height: var(--spacing-40);
+  min-width: var(--spacing-40);
+  padding: 0 var(--spacing-16);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-label);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow-4);
+  transition: opacity var(--duration-150) var(--ease-standard),
+    transform var(--duration-150) var(--ease-standard),
+    background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard),
+    border-color var(--duration-150) var(--ease-standard),
+    box-shadow var(--duration-150) var(--ease-standard);
+}
+
+/* M3 state layer: content color at hover 8%, focus 10%, press 10% */
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-100) var(--ease-standard);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-8);
+}
+
+.btn:hover::before {
+  opacity: var(--state-layer-hover);
+}
+
+.btn:focus-visible::before {
+  opacity: var(--state-layer-focus);
+}
+
+/* the resting lift drops out entirely on press, the same shadow-vanish read
+   as the bell's own state change: the surface reads as flush with the page
+   for the instant it's held down, not just dimmer */
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn:active::before {
+  opacity: var(--state-layer-press);
+}
+
+.btn:disabled {
+  pointer-events: none;
+  color: var(--color-text-quaternary);
+  box-shadow: none;
+}
+
+.btn--icon {
+  width: var(--spacing-40);
+  padding: 0;
+  border-radius: var(--radius-full);
+}
+
+/* a pressed toggle sinks into the canvas */
+.btn--icon[aria-pressed="false"] {
+  color: var(--color-text-secondary);
+}
+
+.btn[aria-expanded="true"] {
+  background: var(--color-canvas);
+  box-shadow: var(--shadow-2);
+}
+
+.btn--quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.btn--quiet:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.btn__label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn__icon:empty {
+  display: none;
+}
+
+.btn--loading[aria-busy="true"] {
+  pointer-events: none;
+}
+
+.btn__spinner {
+  animation: btn-spin var(--duration-1000) linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn--icon {
+    width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn::before {
+    transition-duration: 0.01ms;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+
+  .btn__spinner {
+    animation: none;
+  }
+}

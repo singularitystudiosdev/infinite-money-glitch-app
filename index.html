@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#eef0f3">
+  <title>Infinite money glitch</title>
+  <meta name="description" content="Every project at a glance, each with an assistant that thinks, reads the live numbers and asks before it answers. Setup, credits, billing and notifications, all on the client.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="buttons.css">
+  <link rel="stylesheet" href="components.css">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body class="app">
+  <main class="app-view" id="view" data-page="home"></main>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <script>
+    // errors land in one place so a headless run can read them
+    window.__errors = [];
+    addEventListener("error", (e) => window.__errors.push(`${e.message} @ ${e.filename}:${e.lineno}`));
+    addEventListener("unhandledrejection", (e) => window.__errors.push(`unhandled: ${e.reason?.stack || e.reason}`));
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

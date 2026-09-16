@@ -1,0 +1,13 @@
+{
+  "name": "infinite-money-glitch",
+  "version": "1.0.8",
+  "private": true,
+  "type": "module",
+  "description": "The operator app: a client-side frontend that runs standalone on the bundled sim; serve it with node serve.mjs.",
+  "scripts": {
+    "start": "node serve.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}

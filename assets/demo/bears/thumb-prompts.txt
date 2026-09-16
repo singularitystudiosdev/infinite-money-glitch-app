@@ -1,0 +1,37 @@
+thumbs/gen-01..21.jpg: the 21 upload thumbnails, for a channel of rock climbing
+near-death videos. gen-01 is a real photograph (the start frame of generated.mp4:
+a curly-haired climber in a green t-shirt high on a granite wall beside a gnarled
+leafy tree, far above a forested valley). The other twenty were generated on fal.ai with nano-banana-2
+(16:9, jpeg, resolution 2K, downscaled to 1376x768 with a de-AI pass: lanczos,
+light unsharp, +3% contrast, +4% saturation, fine grain noise).
+
+Every prompt ends with this LOOK line, written to read like an amateur
+action-camera shot: "Amateur action-camera photograph, slight motion blur, fine
+film grain, natural harsh daylight, candid imperfect framing, real photographic
+texture, photorealistic, no text, no watermark".
+
+gen-02 free solo high on a huge overhanging granite wall, looking down past his feet at the enormous forested valley far below
+gen-03 a climber mid-fall down a steep grey rock face, arms and legs out, tiny against the massive wall, a tall tree crown below ready to catch him
+gen-04 two climbers in a violent snowstorm on a narrow snow ridge, whiteout, hunched against the wind, ropes rattling
+gen-05 a climber in a red helmet pressed flat against a grey cliff face as a peregrine falcon swoops past just above his head, wings blurred with motion, shot from the side at close range [regenerated after judge round 1: bird was oversized and the fabric painterly]
+gen-06 extreme close-up of a climber's crimp hold cracking under his fingers, a puff of rock dust, the wall dropping away behind
+gen-07 a climber dangling from a frayed climbing rope over a steep overhang, the rope sheath cut and white core showing against a sharp rock edge
+gen-08 a rock ledge collapsing under a climber's feet, blocks and dust tumbling down the gully as he presses flat against the wall
+gen-09 a climber bridging across a deep dark chimney between two walls, hundreds of feet up, camera looking down the gap
+gen-10 shot from below on the same wall: a climber hanging on a bolted line high on a dark overhanging crag as the first lightning flashes light up the sky behind the ridge above him [regenerated: storm looked like a painted backdrop from the ridge angle]
+gen-11 an ice climber on a steep frozen waterfall as a huge block of ice calves off the wall beside him, ice shards flying
+gen-12 a climber catching a tiny sloper ledge with just his fingertips, feet swinging over a huge void, sweat and chalk dust in the sunlight
+gen-13 a climber dropping past his rappel anchor having rappelled off the end of the rope, mid-fall beside the anchor station
+gen-14 shot from above: a climber hanging by one hand from a grassy cliff edge, the other hand straining for a root, huge drop below
+gen-15 a climber in dark clothing traversing a narrow snow cornice ridge at dusk, blue hour light, wind blowing spindrift off the crest, steep shadowed drops on both sides [regenerated: too close to gen-10's storm ridge]
+gen-16 wide shot from the opposite wall: a lead climber hanging far below his last gear piece on a taut rope after a fall, small against a pale limestone wall, rope dead straight [regenerated: falling figure's limbs read melted]
+gen-17 a climber walking a knife-edge arete with enormous drops on both sides, arms spread for balance, clouds below the ridge
+gen-18 rockfall raining down a wide gully while a climber hugs the wall under an overhang to avoid the bouncing stones
+gen-19 a free soloist in a grey t-shirt traversing a blank granite slab high above an inversion of flat grey cloud, flat overcast light, high contrast, no glow [regenerated: lighting had a dreamlike glow]
+gen-20 a traditional climber's cam pulling out of a crack as he falls, pieces of gear spinning on the rack, dust bursting from the seam
+gen-21 a rescue helicopter hovering close beside an injured climber on a tiny ledge halfway up a huge granite wall, the winch line coming down, morning light
+
+Judging: an external subagent judged the 7x3 contact sheet (qa/13/climb-sheet.png)
+against three criteria (no two too similar, none AI-looking, no text).
+Round 1: FAIL (five cells flagged, one similar pair). Round 2 after the five
+regenerations above: PASS, no pairs, no AI tells, no text.

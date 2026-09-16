@@ -1,0 +1,2690 @@
+/* components.css: the Paper elements beside the button, the one composer,
+   and the eight ways to choose a model. Same language: surface fill, 1px
+   hairline, radius 16 on panels, shadow 4 at rest and 8 for anything that
+   opens. Each component is prefixed .c-<id>; shared pieces are listed with
+   the components that use them so Copy CSS can bundle them. */
+
+/* ---------- shared pieces ---------- */
+
+.panel {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-16);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-4);
+}
+
+.icon-16 {
+  width: 16px;
+  height: 16px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Icon buttons and their menu ---------- */
+
+.c-icons {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+/* an unread badge on the bell, M3/Fluent counter-badge convention: a small
+   pill clipped to the trigger's own corner, sized to its digits, with only
+   a hairline-weight separation ring (1px, not a heavy 2px halo) so it reads
+   as notched into the button rather than floating above it. Hidden at
+   count 0; a numbered pill from 1 upward, capped at "9+" so it never grows
+   wider than it is tall or spills into the next control in the row. */
+.btn__dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-full);
+  background: var(--color-status-ok);
+  color: var(--color-canvas);
+  font: var(--type-meta);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.5);
+  transform-origin: center;
+  transition: opacity var(--duration-150) var(--ease-emphasized-decelerate),
+    transform var(--duration-150) var(--ease-emphasized-decelerate);
+}
+
+.btn__dot:not([data-count="0"]) {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn__dot:not([data-count="0"])::before {
+  content: attr(data-count);
+  /* dead centre, measured: the tracking above also lands after the last
+     glyph and pushes it 0.18px right, so the digits carry none; and on a
+     12px line the digit's ink sits 0.17px low, so the box rides up by
+     half its share of that */
+  letter-spacing: 0;
+  margin-top: -0.33px;
+}
+
+/* the 1 alone carries more room on its right than its left in this face,
+   so it gets the difference back on the left */
+.btn__dot[data-count="1"]::before {
+  padding-left: 0.74px;
+}
+
+.c-menu {
+  position: absolute;
+  top: calc(100% + var(--spacing-8));
+  right: 0;
+  z-index: 3;
+  display: grid;
+  min-width: 200px;
+  padding: var(--spacing-6);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-8);
+  /* grows from the edge nearest the trigger: this menu opens below its
+     chip, so it scales up from the top; .c-dd .c-menu (opens above)
+     overrides the anchor to the bottom below */
+  transform-origin: top center;
+  /* entrance: scale on the y axis only, from the anchored edge; rows fade
+     in on their own stagger below */
+  opacity: 0;
+  transform: scaleY(0.9);
+  transition: opacity var(--duration-150) var(--ease-standard-decelerate),
+    transform var(--duration-200) var(--ease-standard-decelerate),
+    display var(--duration-200) allow-discrete,
+    overlay var(--duration-200) allow-discrete;
+}
+
+.c-menu:not([hidden]) {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+@starting-style {
+  .c-menu:not([hidden]) {
+    opacity: 0;
+    transform: scaleY(0.9);
+  }
+}
+
+.c-menu[hidden] {
+  display: none;
+}
+
+.c-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-10);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--spacing-12) var(--spacing-10);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-label);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-100) var(--ease-standard);
+}
+
+/* each row fades in on its own delay, so the list reads as settling into
+   place rather than appearing as one block; the menu's own y-scale already
+   carries the container, so rows move only a few px of their own */
+.c-menu:not([hidden]) .c-menu__item {
+  animation: c-menu-item-in var(--duration-150) var(--ease-standard-decelerate) backwards;
+}
+
+.c-menu:not([hidden]) .c-menu__item:nth-child(1) { animation-delay: 20ms; }
+.c-menu:not([hidden]) .c-menu__item:nth-child(2) { animation-delay: 45ms; }
+.c-menu:not([hidden]) .c-menu__item:nth-child(3) { animation-delay: 70ms; }
+.c-menu:not([hidden]) .c-menu__item:nth-child(4) { animation-delay: 95ms; }
+.c-menu:not([hidden]) .c-menu__item:nth-child(n + 5) { animation-delay: 120ms; }
+
+@keyframes c-menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+.c-menu__item:hover,
+.c-menu__item:focus-visible {
+  background: var(--color-canvas);
+}
+
+.c-menu__text {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.c-menu__hint {
+  white-space: nowrap;
+}
+
+/* a group heading inside a menu: not a row, never focused */
+.c-menu__label {
+  padding: var(--spacing-8) var(--spacing-10) var(--spacing-2);
+  color: var(--color-text-quaternary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-menu__hint {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Notifications panel ---------- */
+
+.c-notif {
+  position: absolute;
+  top: calc(100% + var(--spacing-8));
+  left: 50%;
+  /* the standalone translate property centers the panel; transform below
+     handles only the scale entrance, so the two compose instead of colliding */
+  translate: -50% 0;
+  z-index: 3;
+  display: grid;
+  width: 280px;
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-8);
+  overflow: hidden;
+  transform-origin: top center;
+  opacity: 0;
+  transform: scaleY(0.9);
+  transition: opacity var(--duration-150) var(--ease-standard-decelerate),
+    transform var(--duration-200) var(--ease-standard-decelerate),
+    display var(--duration-200) allow-discrete,
+    overlay var(--duration-200) allow-discrete;
+}
+
+.c-notif:not([hidden]) {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+@starting-style {
+  .c-notif:not([hidden]) {
+    opacity: 0;
+    transform: scaleY(0.9);
+  }
+}
+
+.c-notif[hidden] {
+  display: none;
+}
+
+.c-notif__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-8) var(--spacing-12) var(--spacing-16);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.c-notif__title {
+  flex: 1;
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.c-notif__list {
+  display: grid;
+  max-height: 288px;
+  padding: var(--spacing-6);
+  overflow-y: auto;
+}
+
+.c-notif__item {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: start;
+  gap: var(--spacing-10);
+  width: 100%;
+  padding: var(--spacing-10);
+  border-radius: var(--radius-8);
+  color: var(--color-ink);
+  font: var(--type-label);
+  text-align: left;
+  animation: c-menu-item-in var(--duration-150) var(--ease-standard-decelerate) backwards;
+}
+
+.c-notif__item svg {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+}
+
+.c-notif__text {
+  text-wrap: pretty;
+}
+
+.c-notif__time {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.c-notif__empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-24) var(--spacing-16);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* an author display value beats the UA [hidden] rule at equal specificity,
+   so the empty state must say display: none for itself when hidden, and
+   this override must come after the rule above to win by source order */
+.c-notif__empty[hidden] {
+  display: none;
+}
+
+.c-notif__empty svg {
+  color: var(--color-text-quaternary);
+}
+
+.c-notif__empty p {
+  margin: 0;
+  font: var(--type-meta);
+  text-wrap: balance;
+}
+
+/* ---------- Stat tile ---------- */
+
+.c-stat {
+  display: grid;
+  gap: var(--spacing-4);
+  width: 100%;
+  max-width: 280px;
+  padding: var(--spacing-16);
+  color: var(--color-ink);
+  font: var(--type-body);
+  text-align: left;
+}
+
+.c-stat__label {
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+/* the number and its badge share a row, badge centred on the number's
+   height, the same shape as the graph's head */
+.c-stat__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.c-stat__value {
+  font: 600 32px / 36px var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* a badge, not a sentence: the arrow and the percentage on a tint of their
+   own color, so the change reads at a glance like a store's price delta */
+.c-stat__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: max-content;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  /* the text leans toward ink so it clears 4.5:1 on its own tint: darker
+     green on the light theme, lighter green on the dark one */
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-stat__delta--down {
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  /* red has less luminance headroom than green, so it leans further */
+  color: color-mix(in oklab, var(--color-danger) 60%, var(--color-ink));
+}
+
+.c-stat__delta--down svg {
+  transform: scaleY(-1);
+}
+
+/* ---------- Task card ---------- */
+
+/* one step to do: the service's mark, the step, and Complete. Done ticks
+   the button and quiets the card, and the button holds as Completed */
+.c-task {
+  display: grid;
+  gap: var(--spacing-12);
+  justify-items: start;
+  width: 100%;
+  max-width: 280px;
+  padding: var(--spacing-16);
+  text-align: left;
+  transition: opacity var(--duration-150) var(--ease-standard);
+}
+
+/* the mark and the step share a row, the step centred on the mark */
+.c-task__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+}
+
+.c-task__mark {
+  flex: none;
+  width: var(--spacing-32);
+  height: var(--spacing-32);
+}
+
+.c-task__title {
+  font: var(--type-title);
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+
+/* the button runs the card's full width */
+.c-task__done {
+  justify-self: stretch;
+  width: 100%;
+}
+
+/* the icon slot is empty at rest, a spinner while verifying, a check when
+   done, so the button reads as the action first and the receipt after */
+.c-task.is-verifying .c-task__done {
+  pointer-events: none;
+  color: var(--color-text-secondary);
+}
+
+.c-task.is-done .c-task__done svg {
+  color: var(--color-status-ok);
+}
+
+.c-task.is-done .c-task__done {
+  pointer-events: none;
+  border-color: transparent;
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  box-shadow: none;
+}
+
+.c-task.is-done .c-task__title {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-hairline-strong);
+}
+
+/* ---------- Credit card ---------- */
+
+/* the four fields a card prints, stacked, expiry and CVC sharing a row;
+   fields use their own border as the focus indicator, like the composer */
+.c-card {
+  display: grid;
+  gap: var(--spacing-12);
+  width: 100%;
+  max-width: 360px;
+  padding: var(--spacing-16);
+  text-align: left;
+}
+
+.c-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--color-ink);
+}
+
+.c-card__head svg {
+  color: var(--color-text-secondary);
+}
+
+.c-card__title {
+  font: var(--type-title);
+}
+
+.c-card__field {
+  display: grid;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+/* the label row also carries the brand pill, so the field keeps its whole
+   width for the number */
+.c-card__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  min-height: 20px;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-card__input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--spacing-40);
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--duration-150) var(--ease-standard);
+}
+
+.c-card__input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+.c-card__input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  border-color: var(--color-hairline-strong);
+}
+
+.c-card__input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.c-card__brand {
+  padding: 1px var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-card__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-12);
+}
+
+.c-card__error {
+  margin: 0;
+  color: var(--color-danger);
+  font: var(--type-meta);
+}
+
+.c-card__save {
+  justify-self: stretch;
+  width: 100%;
+}
+
+.c-card.is-saving .c-card__save {
+  pointer-events: none;
+  color: var(--color-text-secondary);
+}
+
+/* saved: the fields go quiet and read-only, the button holds as Saved */
+.c-card.is-saved .c-card__input {
+  color: var(--color-text-secondary);
+  background: var(--color-canvas);
+}
+
+.c-card.is-saved .c-card__save {
+  pointer-events: none;
+  border-color: transparent;
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  box-shadow: none;
+}
+
+.c-card.is-saved .c-card__save svg {
+  color: var(--color-status-ok);
+}
+
+/* ---------- Projects dashboard ---------- */
+
+/* twelve tiles under one quiet head; each tile is a title and the line its
+   assistant is thinking, which changes on its own */
+.c-dash {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--spacing-16);
+  width: 100%;
+  /* the frame holds the shape it was drawn at, 1874.5 by 947.6; the head
+     and the tiles sit at the top and the rest stays clear */
+  aspect-ratio: 1874.5 / 947.6;
+  padding: var(--spacing-16);
+  text-align: left;
+}
+
+.c-dash__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+}
+
+.c-dash__heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-8);
+}
+
+.c-dash__title {
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.c-dash__meta {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* 260px tiles: four across the full row, so twelve make three even rows */
+/* the grid fills the frame under the head; app.js sets the columns and
+   rows from the count so the tiles share the space evenly, and the New
+   frame is the last cell */
+.c-dash__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-8);
+  min-height: 0;
+}
+
+/* each tile is a small panel of its own: surface fill, hairline, and the
+   same resting shadow as the revenue tile and every other frame */
+.c-dash__tile {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-6);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-4);
+  animation: c-menu-item-in var(--duration-150) var(--ease-standard-decelerate) backwards;
+}
+
+/* New is a frame among the tiles: a dashed outline, a plus and the word,
+   centred; press it and a project lands at the front of the grid */
+.c-dash__tile--new {
+  place-content: center;
+  justify-items: center;
+  gap: var(--spacing-4);
+  border-style: dashed;
+  border-color: var(--color-hairline-strong);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-dash__tile--new:hover {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.c-dash__tile--new svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* the badges sit in a row inside the tile's top-right corner: the orange
+   Needs you count first, then the bell's green unread count; the name
+   keeps clear of them */
+.c-dash__badges {
+  position: absolute;
+  top: var(--spacing-10);
+  right: var(--spacing-10);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.c-dash__badge {
+  position: static;
+}
+
+/* the same counter in orange: a question is waiting. A true orange, not
+   the amber of the warn token, so it reads as its own kind beside the green */
+.c-dash__badge--needs {
+  background: var(--color-status-needs);
+}
+
+/* a breakthrough: a wheel of the spectrum turning under a frosted pane of
+   the surface, inside the tile's own hairline. The layer is part of every
+   tile and only fades: in over 400ms as the state lands, out over 700ms as
+   it clears, so there is never a cut. The wheel keeps turning while hidden,
+   so it never jumps on the way in. Text and badge sit above it */
+.c-dash__tile {
+  isolation: isolate;
+}
+
+@property --rb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* one box over the tile's border box with a clear 1px border of its own,
+   so the tile's hairline shows through, the wheel filling it, and the
+   pane frosting everything inside the border */
+.c-dash__fx {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-12);
+  background: conic-gradient(from var(--rb-angle) at 50% 50%, #ff2d55, #ff9500, #ffd60a, #30d158, #0a84ff, #bf5af2, #ff2d55) padding-box;
+  visibility: hidden;
+  opacity: 0;
+  animation: dash-rainbow-turn 5s linear infinite; /* deliberate */
+  transition: opacity 700ms var(--ease-standard), visibility 0s linear 700ms; /* deliberate */
+}
+
+.c-dash__fx::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radius-12) - 1px);
+  background: color-mix(in oklab, var(--color-surface) 58%, transparent);
+  backdrop-filter: blur(10px) saturate(1.4);
+}
+
+.c-dash__tile.is-rainbow .c-dash__fx {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 400ms var(--ease-standard-decelerate), visibility 0s; /* deliberate */
+}
+
+@keyframes dash-rainbow-turn {
+  to {
+    --rb-angle: 360deg;
+  }
+}
+
+/* the bare party emoji in the corner, big enough to read, nothing behind it */
+.c-dash__badge--party {
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-dash__fx {
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+  }
+}
+
+.c-dash__name {
+  padding-right: var(--spacing-32);
+}
+
+/* two or three badges in the corner: the name gives them more room */
+.c-dash__tile.has-needs .c-dash__name,
+.c-dash__tile.is-rainbow .c-dash__name {
+  padding-right: 60px;
+}
+
+.c-dash__tile.is-rainbow.has-needs .c-dash__name {
+  padding-right: 84px;
+}
+
+.c-dash__tile:nth-child(n + 2) { animation-delay: 30ms; }
+.c-dash__tile:nth-child(n + 5) { animation-delay: 60ms; }
+.c-dash__tile:nth-child(n + 9) { animation-delay: 90ms; }
+
+.c-dash__name {
+  font: var(--type-label);
+  font-weight: 600;
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+
+.c-dash__think {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-6);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  text-wrap: pretty;
+}
+
+.c-dash__think svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+/* ---------- Settings ---------- */
+
+/* a settings page: the sections down the left as the sidebar's rows, the
+   open one on the canvas tint, and the section's body at the right */
+.c-settings {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr);
+  width: 100%;
+  /* the page holds the shape it was drawn at, 1844.6 by 942.8; the
+     sections and the open one sit at the top left and the rest stays clear */
+  aspect-ratio: 1844.6 / 942.8;
+  overflow: hidden;
+  text-align: left;
+}
+
+.c-settings__nav {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-12) var(--spacing-8);
+  border-right: 1px solid var(--color-hairline);
+  background: color-mix(in oklab, var(--color-canvas) 50%, var(--color-surface));
+}
+
+.c-settings__title {
+  padding: var(--spacing-4) var(--spacing-8) var(--spacing-8);
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.c-settings__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-10);
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-settings__item svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.c-settings__item:hover,
+.c-settings__item[aria-current="true"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.c-settings__item[aria-current="true"] {
+  box-shadow: var(--shadow-2);
+}
+
+.c-settings__body {
+  min-width: 0;
+  padding: var(--spacing-20) var(--spacing-24) var(--spacing-24);
+}
+
+.c-settings__section {
+  display: grid;
+  gap: var(--spacing-16);
+  max-width: 440px;
+}
+
+.c-settings__h {
+  margin: 0;
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.c-settings__line {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font: var(--type-body);
+  text-wrap: pretty;
+}
+
+/* the balance: a quiet label, the number in the display face with its unit
+   beside it, a bar for how much of the last pack is left, and the line
+   that says how long it lasts */
+.c-settings__balance {
+  display: grid;
+  gap: var(--spacing-6);
+}
+
+.c-settings__balance-label {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-settings__balance-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-8);
+}
+
+.c-settings__balance-value {
+  font: 600 32px / 36px var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.c-settings__balance-unit {
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.c-settings__bar {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  overflow: hidden;
+}
+
+.c-settings__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-ink);
+  transform-origin: left center;
+  transition: transform 900ms var(--ease-standard); /* deliberate */
+}
+
+.c-settings.is-low .c-settings__bar-fill {
+  background: var(--color-danger);
+}
+
+.c-settings__usage {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  text-wrap: pretty;
+}
+
+.c-settings.is-low .c-settings__usage {
+  color: var(--color-danger);
+}
+
+/* the packs: rows with a radio, the credits and a note, the price at the
+   right; the picked one is ringed in ink */
+.c-settings__packs {
+  display: grid;
+  gap: var(--spacing-6);
+}
+
+.c-settings__pack {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  min-height: var(--spacing-48);
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color var(--duration-150) var(--ease-standard),
+    background-color var(--duration-150) var(--ease-standard);
+}
+
+.c-settings__pack:hover {
+  background: var(--color-canvas);
+}
+
+.c-settings__pack.is-selected {
+  border-color: var(--color-ink);
+}
+
+.c-settings__pack:has(:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.c-settings__radio {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-hairline-strong);
+  border-radius: var(--radius-full);
+  transition: border-color var(--duration-150) var(--ease-standard),
+    box-shadow var(--duration-150) var(--ease-standard);
+}
+
+.c-settings__pack.is-selected .c-settings__radio {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 4px var(--color-ink);
+}
+
+.c-settings__pack-body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.c-settings__pack-credits {
+  font: var(--type-label);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.c-settings__pack-note {
+  padding: var(--spacing-2) var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-settings__pack-price {
+  font: var(--type-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* the top-up switch: a checkbox in ink and one line beside it */
+.c-settings__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-10);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  cursor: pointer;
+}
+
+.c-settings__check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--color-ink);
+}
+
+.c-settings__buy {
+  justify-self: start;
+}
+
+/* ---------- Projects sidebar ---------- */
+
+/* a sidebar's project list: a quiet head, then one-line rows with a hollow
+   dot and a name cut by an ellipsis; the open project fills its dot. The
+   list scrolls inside the frame with the same quiet thumb as the insights */
+.c-side {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 280px;
+  max-width: 100%;
+  height: 420px;
+  padding: var(--spacing-8) 0;
+  overflow: hidden;
+  text-align: left;
+}
+
+.c-side__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-4) var(--spacing-12) var(--spacing-8) var(--spacing-16);
+}
+
+.c-side__title {
+  flex: 1;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.c-side__sort {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-side__sort:hover,
+.c-side__sort[aria-pressed="true"] {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.c-side__list {
+  display: grid;
+  margin: 0;
+  padding: 0 var(--spacing-8);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.c-side__list:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.c-side__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-side__item:hover {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.c-side__item[aria-current="true"] {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.c-side__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--color-hairline-strong);
+  border-radius: var(--radius-full);
+  transition: border-color var(--duration-150) var(--ease-standard),
+    background-color var(--duration-150) var(--ease-standard);
+}
+
+.c-side__item:hover .c-side__dot {
+  border-color: var(--color-ink);
+}
+
+.c-side__item[aria-current="true"] .c-side__dot {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+}
+
+.c-side__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Setup flow ---------- */
+
+/* the steps to do as a checklist: any row opens on a press, in any order,
+   and a done one folds to what it recorded. The task and card frames sit
+   inside a step bare, without their own panel */
+.c-task--bare,
+.c-card--bare {
+  padding: 0;
+  max-width: none;
+}
+
+/* half of 865.3 by 1076.8, holding that ratio: the list sits at the top,
+   and the frame only grows past the ratio if an open step needs the room;
+   on a narrower screen the width gives way first */
+.c-flow {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-16);
+  width: 432.65px;
+  max-width: 100%;
+  aspect-ratio: 865.3 / 1076.8;
+  padding: var(--spacing-16);
+  text-align: left;
+}
+
+.c-flow__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-12);
+}
+
+.c-flow__title {
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.c-flow__count {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-flow__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-flow__row {
+  display: grid;
+  padding: var(--spacing-12) 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.c-flow__row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.c-flow__row:last-child {
+  padding-bottom: 0;
+}
+
+/* the row head is the press target: the whole line, check to chevron */
+.c-flow__row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-12);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.c-flow__row-head {
+  cursor: pointer;
+}
+
+button.c-flow__row-head:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 4px;
+}
+
+.c-flow__row-text {
+  display: grid;
+  flex: 1;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.c-flow__row-title {
+  font: var(--type-label);
+  color: var(--color-ink);
+}
+
+.c-flow__hint {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-flow__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-flow__summary svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* the check circle: hollow for a step to do, ink when it is open or the
+   pointer is over it, filled ink with a check once it is done */
+.c-flow__check {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: 1.5px solid var(--color-hairline-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-canvas);
+  transition: border-color var(--duration-150) var(--ease-standard);
+}
+
+.c-flow__check svg {
+  width: 13px;
+  height: 13px;
+}
+
+button.c-flow__row-head:hover .c-flow__check,
+.c-flow__row.is-current .c-flow__check {
+  border-color: var(--color-ink);
+}
+
+.c-flow__row.is-done .c-flow__check {
+  border-color: transparent;
+  background: var(--color-ink);
+}
+
+.c-flow__row.is-done .c-flow__row-title {
+  color: var(--color-text-secondary);
+}
+
+.c-flow__chev {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-text-quaternary);
+  transition: transform var(--duration-150) var(--ease-standard);
+}
+
+.c-flow__row.is-current .c-flow__chev {
+  transform: rotate(180deg);
+}
+
+/* the open step's frame sits under the title, in line with the text */
+.c-flow__body {
+  display: grid;
+  margin-top: var(--spacing-12);
+  padding-left: 34px;
+}
+
+/* all done: what landed and a way to run it again */
+.c-flow__done {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-12);
+  padding: var(--spacing-16);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-12);
+  background: var(--color-canvas);
+}
+
+.c-flow__done-mark {
+  display: inline-grid;
+  place-items: center;
+  width: var(--spacing-32);
+  height: var(--spacing-32);
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+}
+
+.c-flow__done-title {
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.c-flow__done-text {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-flow__done .btn {
+  margin-top: var(--spacing-6);
+}
+
+/* the Stripe step: the card form's field pieces under the mark, a country
+   picker with its own chevron, and Connect that locks as Connected */
+.c-stripe {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.c-stripe__pick {
+  position: relative;
+  display: flex;
+}
+
+.c-stripe__select {
+  appearance: none;
+  padding-right: var(--spacing-40);
+  cursor: pointer;
+}
+
+.c-stripe__select:disabled {
+  color: var(--color-text-secondary);
+  background: var(--color-canvas);
+  cursor: default;
+}
+
+.c-stripe__chev {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-12);
+  translate: 0 -50%;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.c-stripe__connect {
+  width: 100%;
+}
+
+.c-stripe.is-connecting .c-stripe__connect {
+  pointer-events: none;
+  color: var(--color-text-secondary);
+}
+
+.c-stripe.is-connected .c-card__input {
+  color: var(--color-text-secondary);
+  background: var(--color-canvas);
+}
+
+.c-stripe.is-connected .c-stripe__connect {
+  pointer-events: none;
+  border-color: transparent;
+  background: var(--color-canvas);
+  box-shadow: none;
+}
+
+/* ---------- Graph ---------- */
+
+.c-graph {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-16);
+  width: 100%;
+  padding: var(--spacing-16);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+
+.c-graph__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.c-graph__label {
+  width: 100%;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.c-graph__value {
+  font: 600 32px / 36px var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* same pattern as the stat tile's own delta pill, so the two read as one
+   family: up is status-ok, down is danger, the arrow flips with it */
+.c-graph__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: max-content;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  /* the text leans toward ink so it clears 4.5:1 on its own tint: darker
+     green on the light theme, lighter green on the dark one */
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+/* dragging the crosshair across the chart is a drag, not a text selection --
+   without this, the browser's native drag-select highlight paints a blue
+   selection box around the svg (and the card behind it) on every drag */
+.c-graph__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  cursor: crosshair;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.c-graph__line {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.c-graph__grid {
+  stroke: var(--color-hairline);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.c-graph__axis {
+  fill: var(--color-text-quaternary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+/* dots sized to the 4px line so a point never reads thinner than the
+   stroke running through it */
+.c-graph__dot {
+  r: 5.5;
+  fill: var(--color-surface);
+  stroke: var(--color-ink);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: r var(--duration-150) var(--ease-standard),
+    fill var(--duration-150) var(--ease-standard);
+}
+
+.c-graph__dot:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* app.js cancels mousedown on the chart so a click never focuses the svg
+   or a dot; this is the fallback for any engine that focuses them anyway,
+   so a pointer press can never paint the UA blue ring. Keyboard focus on a
+   dot still gets the ink ring above. */
+.c-graph__svg:focus,
+.c-graph__dot:focus:not(:focus-visible) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.c-graph__dot:hover,
+.c-graph__dot.is-active {
+  r: 6.5;
+  fill: var(--color-ink);
+}
+
+/* a guide, never a target: it follows the pointer onto whichever dot is
+   hovered, so without this it would sit between that dot and the pointer */
+.c-graph__crosshair {
+  stroke: var(--color-hairline-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  pointer-events: none;
+}
+
+/* the UA [hidden] rule is scoped to the HTML namespace, so on an SVG line
+   the attribute alone hides nothing: without this the guide line stayed
+   parked at the last hovered day after the pointer left */
+.c-graph__crosshair[hidden] {
+  display: none;
+}
+
+/* the hovered point's own card: title, then the point compared against the
+   day before it, each row carrying a swatch so the two never get mixed up
+   at a glance -- same panel language as every other tile, not a dark pill */
+/* an author display value beats the UA [hidden] rule at equal specificity
+   (see .c-notif__empty[hidden] above), so grid only applies once shown */
+.c-graph__tip:not([hidden]) {
+  display: grid;
+}
+
+.c-graph__tip {
+  position: absolute;
+  top: var(--spacing-32);
+  left: 0;
+  gap: var(--spacing-6);
+  width: max-content;
+  min-width: 168px;
+  padding: var(--spacing-8) var(--spacing-12);
+  box-shadow: var(--shadow-8);
+  pointer-events: none;
+}
+
+.c-graph__tip--flip {
+  translate: 0 0;
+}
+
+.c-graph__tip-title {
+  font: var(--type-label);
+}
+
+.c-graph__tip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  font: var(--type-meta);
+  color: var(--color-text-secondary);
+}
+
+.c-graph__tip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-2);
+  background: var(--color-ink);
+  flex: none;
+}
+
+.c-graph__tip-row--prev .c-graph__tip-swatch {
+  background: var(--color-hairline-strong);
+}
+
+.c-graph__tip-date {
+  flex: 1;
+}
+
+.c-graph__tip-value {
+  color: var(--color-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-graph__dot {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ---------- Insights ---------- */
+
+/* GA4's Insights dashboard shape: a most-recent-first list of typed
+   findings, each a headline that names the metric, one line of why, and
+   the size of the change; new ones land on top on their own */
+.c-insights {
+  display: grid;
+  gap: var(--spacing-12);
+  width: 100%;
+  padding: var(--spacing-16);
+  text-align: left;
+}
+
+.c-insights__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-12);
+}
+
+/* the panel picker: Insights or Missions, a segmented pair at the left of
+   the head, the same control as the type filter but at label weight */
+.c-insights__views {
+  display: inline-flex;
+  flex: none;
+  gap: var(--spacing-4);
+  margin-right: auto;
+  padding: var(--spacing-4);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+}
+
+.c-insights__view {
+  padding: var(--spacing-4) var(--spacing-10);
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-insights__view:hover {
+  color: var(--color-ink);
+}
+
+.c-insights__view[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-2);
+}
+
+/* one view at a time: the filters and the findings belong to Insights, the
+   missions list to Missions */
+.c-insights[data-view="missions"] .c-insights__filters,
+.c-insights[data-view="missions"] .c-insights__list,
+.c-insights[data-view="missions"] .c-insights__empty {
+  display: none;
+}
+
+.c-insights[data-view="insights"] .c-missions {
+  display: none;
+}
+
+/* the type filter: a segmented control, the pressed segment lifted onto the
+   surface the way a selected tab is */
+.c-insights__filters {
+  display: inline-flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+}
+
+.c-insights__filter {
+  padding: var(--spacing-4) var(--spacing-8);
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-insights__filter:hover {
+  color: var(--color-ink);
+}
+
+.c-insights__filter[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-2);
+}
+
+/* three rows show; the rest scroll inside the card (app.js sets the
+   max-height from the rendered rows), the same way the bell's feed does */
+.c-insights__list {
+  display: grid;
+  padding-right: var(--spacing-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* the scrollbar is an overlay-style thumb: thin, rounded, no track and no
+   outline, and only there while the pointer is over the list or the list
+   is moving (app.js sets is-scrolling for a moment after each scroll).
+   The standard properties, not ::-webkit-scrollbar: Chromium does not
+   repaint the webkit pseudo-elements when the scroller's hover state
+   changes, so a thumb shown on hover stayed painted after the pointer left */
+.c-insights__list {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.c-insights__list:hover,
+.c-insights__list.is-scrolling {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.c-insights__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) 0;
+  animation: c-menu-item-in var(--duration-150) var(--ease-standard-decelerate) backwards;
+}
+
+.c-insights__item + .c-insights__item {
+  border-top: 1px solid var(--color-hairline);
+}
+
+/* rows settle in on their own stagger, the same read as the menu's items */
+.c-insights__item:nth-child(1) { animation-delay: 20ms; }
+.c-insights__item:nth-child(2) { animation-delay: 45ms; }
+.c-insights__item:nth-child(3) { animation-delay: 70ms; }
+.c-insights__item:nth-child(4) { animation-delay: 95ms; }
+.c-insights__item:nth-child(n + 5) { animation-delay: 120ms; }
+
+.c-insights__mark {
+  display: grid;
+  place-items: center;
+  width: var(--spacing-32);
+  height: var(--spacing-32);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.c-insights__body {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.c-insights__meta {
+  display: flex;
+  gap: var(--spacing-8);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* the type carries the weight, the date carries the numerals; both stay
+   in the secondary colour, which clears 4.5:1 where the hint colour does not */
+.c-insights__meta > span:first-child {
+  font-weight: 500;
+}
+
+.c-insights__when {
+  font-variant-numeric: tabular-nums;
+}
+
+.c-insights__headline {
+  font: var(--type-label);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.c-insights__why {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  text-wrap: pretty;
+}
+
+/* missions: what the agent is working on, one row each with the site's
+   mark as a link, a bar for how far along it is, and the step it is on */
+.c-missions {
+  display: grid;
+}
+
+.c-missions__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) 0;
+  animation: c-menu-item-in var(--duration-150) var(--ease-standard-decelerate) backwards;
+}
+
+.c-missions__item + .c-missions__item {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.c-missions__item:nth-child(1) { animation-delay: 20ms; }
+.c-missions__item:nth-child(2) { animation-delay: 45ms; }
+.c-missions__item:nth-child(n + 3) { animation-delay: 70ms; }
+
+.c-missions__mark {
+  display: grid;
+  place-items: center;
+  width: var(--spacing-32);
+  height: var(--spacing-32);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-missions__mark:hover {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+}
+
+.c-missions__body {
+  display: grid;
+  gap: var(--spacing-6);
+  min-width: 0;
+}
+
+.c-missions__row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.c-missions__title {
+  font: var(--type-label);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.c-missions__site {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-missions__pct {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.c-missions__bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+}
+
+/* the fill is a full-width span scaled from the left, so progress moves on
+   transform rather than layout */
+.c-missions__bar > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-ink);
+  transform-origin: left center;
+  transition: transform var(--duration-200) var(--ease-standard);
+}
+
+/* the step it is on: a spinner while it moves, a check once it is done */
+.c-missions__think {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-missions__think svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.c-missions__item.is-done .c-missions__think svg {
+  color: var(--color-ink);
+}
+
+/* the same badge as the revenue tile and the graph, so a change reads the
+   same size everywhere on the sheet */
+.c-insights__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: max-content;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  /* the text leans toward ink so it clears 4.5:1 on its own tint: darker
+     green on the light theme, lighter green on the dark one */
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-insights__delta--down {
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  /* red has less luminance headroom than green, so it leans further */
+  color: color-mix(in oklab, var(--color-danger) 60%, var(--color-ink));
+}
+
+.c-insights__delta--down svg {
+  transform: scaleY(-1);
+}
+
+.c-insights__empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* an author display value beats the UA [hidden] rule at equal specificity
+   (see .c-notif__empty[hidden] above) */
+.c-insights__empty[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-insights__item {
+    animation: none;
+  }
+
+  .c-insights__filter {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ---------- Agent transcript ---------- */
+
+/* the composer sits under a transcript: your message, then the assistant's
+   turn as a thinking disclosure (Claude.ai's "Thought for Ns"), tool-call
+   cards (name, arguments, a spinner that becomes a check, the result on
+   open), a question it may stop to ask, and the answer streaming in */
+.c-chat {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-12);
+  width: 100%;
+  max-width: 640px;
+}
+
+.c-thread {
+  display: grid;
+  gap: var(--spacing-12);
+  max-height: 420px;
+  padding: var(--spacing-2) var(--spacing-6) var(--spacing-2) var(--spacing-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: opacity var(--duration-150) var(--ease-standard);
+}
+
+.c-thread:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.c-thread:empty {
+  display: none;
+}
+
+/* while a question is up the transcript steps back */
+.c-chat.is-asking .c-thread {
+  opacity: 0.5;
+}
+
+.c-turn {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.c-msg {
+  font: var(--type-body);
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+
+.c-msg--user {
+  justify-self: end;
+  max-width: 80%;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-16);
+  background: var(--color-canvas);
+}
+
+/* an answer to a question is a smaller echo, so it reads as a reply */
+.c-msg--reply {
+  font: var(--type-meta);
+  color: var(--color-text-secondary);
+}
+
+.c-msg--assistant {
+  padding: 0 var(--spacing-4);
+}
+
+/* a word animated in on its own needs a box to move as one; a letter stays
+   an inline run so a line can only break at the spaces between words */
+.c-msg__word {
+  display: inline-block;
+}
+
+.c-msg__char {
+  display: inline;
+}
+
+/* the caret stays glued to the last letter rather than wrapping alone */
+.c-msg--assistant.is-live::after {
+  white-space: nowrap;
+}
+
+/* the caret at the end of an answer while it is still arriving */
+.c-msg--assistant.is-live::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--color-ink);
+  animation: c-blink var(--duration-1000) steps(2, start) infinite;
+}
+
+/* the effects that come without the caret */
+.c-msg--assistant.is-live.no-caret::after {
+  display: none;
+}
+
+@keyframes c-blink {
+  to {
+    opacity: 0;
+  }
+}
+
+/* thinking and tool calls are native disclosures: the summary is the row,
+   the body opens under it, and the marker is drawn by us */
+.c-think > summary,
+.c-tool > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.c-think > summary::-webkit-details-marker,
+.c-tool > summary::-webkit-details-marker {
+  display: none;
+}
+
+.c-think > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: max-content;
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-think__chev {
+  transition: transform var(--duration-150) var(--ease-standard);
+}
+
+.c-think[open] .c-think__chev {
+  transform: rotate(180deg);
+}
+
+/* the live run lives in a strip fused to the top of the composer frame:
+   flush to its edges, a hairline under it, the spinner and the current
+   step on one row and the reasoning streaming under them while it thinks */
+.c-composer__status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  margin: calc(-1 * var(--spacing-16)) calc(-1 * var(--spacing-16)) 0;
+  padding: var(--spacing-10) var(--spacing-16);
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+/* an author display value beats the UA [hidden] rule at equal specificity
+   (see .c-notif__empty[hidden] above) */
+.c-composer__status[hidden] {
+  display: none;
+}
+
+/* the step label shimmers while the run is live */
+.c-composer__status-text {
+  background: linear-gradient(90deg, var(--color-text-secondary) 0%, var(--color-ink) 50%, var(--color-text-secondary) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: c-shimmer 1.6s linear infinite; /* deliberate */ /* an indeterminate loop, not a transition */
+}
+
+@keyframes c-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.c-think__body {
+  margin: var(--spacing-4) 0 var(--spacing-4) 7px;
+  padding: 0 0 0 var(--spacing-16);
+  border-left: 2px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+.c-tool > summary {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-6) var(--spacing-8);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-meta);
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.c-tool > summary:hover {
+  background: var(--color-canvas);
+}
+
+.c-tool__icon {
+  color: var(--color-text-secondary);
+}
+
+.c-tool__call {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2) var(--spacing-8);
+  min-width: 0;
+}
+
+.c-tool__name {
+  font-weight: 500;
+}
+
+/* arguments and results are code, so they take the one monospace stack */
+.c-tool__args,
+.c-tool__result {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-secondary);
+}
+
+.c-tool__status {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+}
+
+.c-tool.is-done .c-tool__status {
+  color: var(--color-status-ok);
+}
+
+.c-tool__spin {
+  animation: btn-spin var(--duration-1000) linear infinite;
+}
+
+.c-tool__result {
+  margin: var(--spacing-4) 0 0;
+  padding: var(--spacing-8) var(--spacing-10);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* the question takes the whole composer frame: the question as the header
+   with a chevron that folds the form away, numbered rows that select, an
+   Other row that opens a text field, and Submit at the foot. The frame
+   stays raised while the form is up (the rows sit inside it, so its
+   focus-within sink would otherwise swallow the selected row's tint) */
+.c-composer.is-asking > :not(.c-ask) {
+  display: none;
+}
+
+.c-composer.is-asking,
+.c-composer.is-asking:focus-within {
+  border-color: var(--color-hairline);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-4);
+}
+
+.c-ask {
+  display: grid;
+  gap: var(--spacing-2);
+  margin: calc(-1 * var(--spacing-16));
+  padding: var(--spacing-8) var(--spacing-16) var(--spacing-16);
+}
+
+/* an author display value beats the UA [hidden] rule at equal specificity
+   (see .c-notif__empty[hidden] above) */
+.c-ask[hidden],
+.c-ask__other[hidden],
+.c-chat__reopen[hidden] {
+  display: none;
+}
+
+/* the pill that brings a folded form back, above the composer */
+.c-chat__reopen {
+  justify-self: end;
+  gap: var(--spacing-6);
+  min-height: var(--spacing-32);
+  padding: 0 var(--spacing-12);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.c-chat__reopen-chev {
+  transform: rotate(180deg);
+}
+
+.c-ask__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-height: var(--spacing-32);
+}
+
+.c-ask__q {
+  flex: 1;
+  font: var(--type-label);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+/* a bare chevron, not a full-size icon button */
+.c-ask__toggle {
+  min-height: 28px;
+  min-width: 28px;
+  width: 28px;
+  color: var(--color-text-secondary);
+}
+
+.c-ask__options {
+  display: grid;
+  margin-bottom: var(--spacing-8);
+}
+
+/* rows are flush lists, one hairline between each; the selected row is a
+   soft tint of the whole row with its number badge turned ink, the
+   pointed-at or focused row a lighter version of the same, never a ring */
+.c-ask__option {
+  display: grid;
+  grid-template-columns: var(--spacing-20) 1fr;
+  align-items: center;
+  gap: var(--spacing-12);
+  min-height: 52px;
+  margin: 0 calc(-1 * var(--spacing-8));
+  padding: var(--spacing-8) var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-label);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.c-ask__option + .c-ask__option {
+  border-top: 1px solid var(--color-hairline);
+  border-radius: 0 0 var(--radius-8) var(--radius-8);
+}
+
+.c-ask__option:hover,
+.c-ask__option:focus-visible {
+  background: color-mix(in oklab, var(--color-canvas) 55%, var(--color-surface));
+  outline: 2px solid transparent;
+  outline-offset: 0;
+}
+
+.c-ask__option.is-selected {
+  background: var(--color-canvas);
+}
+
+/* the row's number is the key that picks it */
+.c-ask__num {
+  display: grid;
+  place-items: center;
+  width: var(--spacing-20);
+  height: var(--spacing-20);
+  border-radius: var(--radius-4);
+  background: var(--color-canvas);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-ask__option.is-selected .c-ask__num {
+  background: var(--color-ink);
+  color: var(--color-surface);
+}
+
+.c-ask__text {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.c-ask__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.c-ask__note {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-ask__other {
+  display: flex;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-8);
+}
+
+.c-ask__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.c-ask__kbd {
+  margin-left: var(--spacing-6);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.c-ask__input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--spacing-40);
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-body);
+}
+
+.c-ask__input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+/* the field's own border is its focus indicator, like the rows: no ring */
+.c-ask__input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  border-color: var(--color-hairline-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-msg--assistant.is-live::after,
+  .c-composer__status-text,
+  .c-tool__spin {
+    animation: none;
+  }
+
+  .c-composer__status-text {
+    color: var(--color-text-secondary);
+    background: none;
+  }
+
+  .c-think__chev,
+  .c-tool > summary,
+  .c-ask__option,
+  .c-thread {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ---------- Composer ---------- */
+
+.c-composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  width: 100%;
+  max-width: 640px;
+  padding: var(--spacing-16);
+  text-align: left;
+  transition: border-color var(--duration-200) var(--ease-standard),
+    background-color var(--duration-200) var(--ease-standard),
+    box-shadow var(--duration-200) var(--ease-standard);
+}
+
+/* sink into the canvas exactly like an expanded icon button (same tokens
+   as .btn[aria-expanded="true"]): fill drops from raised surface to flush
+   canvas, shadow shrinks from resting to pressed-in */
+.c-composer:focus-within {
+  border-color: var(--color-hairline-strong);
+  background: var(--color-canvas);
+  box-shadow: var(--shadow-2);
+}
+
+/* the prompt carries its own inset, so the first line has air above the
+   border and the caret never touches it */
+.c-composer__input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  max-height: 160px;
+  padding: var(--spacing-2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  caret-color: var(--color-accent);
+  font: var(--type-body);
+  font-size: 15px;
+  line-height: 22px;
+  resize: none;
+}
+
+.c-composer__input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+/* the box's border is the field's ring, so the caret never draws a second one */
+.c-composer__input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.c-composer__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  width: 100%;
+  min-height: var(--spacing-32);
+}
+
+.c-composer__spacer {
+  flex: 1;
+}
+
+/* the round send: accent when there is text, canvas when there is not */
+.btn--send {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  transition: background-color var(--duration-200) var(--ease-standard),
+    color var(--duration-200) var(--ease-standard),
+    transform var(--duration-150) var(--ease-standard),
+    box-shadow var(--duration-150) var(--ease-standard);
+}
+
+/* a step darker than the composer's own canvas fill, and darker again once
+   focus sinks the composer to that same canvas: disabled never means
+   invisible, it still has to read as a control sitting on the surface */
+.btn--send:disabled {
+  background: color-mix(in oklab, var(--color-hairline-strong) 55%, var(--color-ink));
+  color: var(--color-canvas);
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* attachment chips, added by the paperclip */
+.c-composer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+  width: 100%;
+}
+
+.c-composer__chips:empty {
+  display: none;
+}
+
+.c-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-height: var(--spacing-32);
+  padding: 0 var(--spacing-6) 0 var(--spacing-10);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font: var(--type-label);
+  white-space: nowrap;
+}
+
+.c-chip__x {
+  display: inline-grid;
+  place-items: center;
+  width: var(--spacing-24);
+  height: var(--spacing-24);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.c-chip__x:hover {
+  background: var(--color-hairline);
+  color: var(--color-ink);
+}
+
+/* voice: the mic swaps to a waveform while listening; no color change, the
+   shape carries the state (a crossfade like the bell's, scoped to its own
+   class names so nothing collides if the bell ever needs one again) */
+.btn__swap {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+.btn__swap-mic,
+.btn__swap-wave {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--duration-200) var(--ease-emphasized-decelerate),
+    transform var(--duration-200) var(--ease-emphasized-decelerate);
+}
+
+[data-mic][aria-pressed="false"] .btn__swap-wave,
+[data-mic][aria-pressed="true"] .btn__swap-mic {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+[data-mic][aria-pressed="true"] .btn__swap-wave,
+[data-mic][aria-pressed="false"] .btn__swap-mic {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* three bars, each on its own phase, so together they read as a live level
+   meter rather than a synchronized blink. A looping ambient indicator, not
+   a one-shot transition, so it is exempt from the 300ms transition cap. */
+.btn__wave-bar {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: c-wave 900ms ease-in-out infinite; /* deliberate */
+}
+
+.btn__wave-bar:nth-child(1) {
+  animation-delay: -600ms;
+}
+
+.btn__wave-bar:nth-child(3) {
+  animation-delay: -300ms;
+}
+
+@keyframes c-wave {
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ---------- the model picker, eight ways ---------- */
+
+.c-dd {
+  position: relative;
+  display: inline-flex;
+}
+
+/* this menu opens above its chip, so it grows upward from the bottom edge */
+.c-dd .c-menu {
+  top: auto;
+  bottom: calc(100% + var(--spacing-8));
+  right: auto;
+  left: 0;
+  transform-origin: bottom center;
+  min-width: 280px;
+  /* a long menu scrolls inside itself instead of running off the top */
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.c-composer__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-height: var(--spacing-32);
+  padding: 0 var(--spacing-8) 0 var(--spacing-12);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.c-composer__chip:hover,
+.c-composer__chip[aria-expanded="true"] {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* plain: the name and a chevron, nothing else */
+.pick-plain {
+  padding-left: var(--spacing-12);
+}
+
+/* ---------- floors ---------- */
+
+@media (pointer: coarse) {
+  .c-composer__input,
+  .c-card__input {
+    font-size: max(16px, 1em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn__dot,
+  .btn__swap-mic,
+  .btn__swap-wave,
+  .c-composer,
+  .c-composer__chip,
+  .c-menu,
+  .c-menu__item,
+  .c-notif {
+    transition-duration: 0.01ms;
+  }
+
+  .c-menu:not([hidden]),
+  .c-notif:not([hidden]) {
+    transform: none;
+  }
+
+  .c-menu:not([hidden]) .c-menu__item,
+  .c-notif__item,
+  .btn__wave-bar {
+    animation: none;
+  }
+}

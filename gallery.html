@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Paper, working</title>
+  <meta name="description" content="Nine Paper elements wired together, plus one prompt composer whose assistant thinks, calls tools and asks before it answers. Everything is live.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="buttons.css">
+  <link rel="stylesheet" href="components.css">
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <h1>Paper, working.</h1>
+      <p>Nine elements, one state, one composer. Press home to return to the top, the bell to open the notifications feed, the dots for a menu. A new notification arrives on its own every few seconds. Upload an invoice and the revenue counts up to take it. Move over the user-count graph, or tab into it, to read each day. Insights list what changed and why, typed as breakthroughs, discoveries and anomalies, with a new one landing every so often. Missions, beside the insights, show what the assistant is working on right now, each with a bar and the step it is on. The projects sidebar lists every project on one line each, the open one marked. Settings opens on Credits: the balance the projects spend as they think, how long it lasts, and three packs to buy more. The dashboard shows twelve projects at once, each with what its assistant is thinking, a green count for new thoughts and an orange one when it needs an answer. The setup checklist has the steps to do, create the YouTube channel, fill in the card, set up the Stripe account; open any one in any order, and each folds to what it recorded once it lands. Send a message and the assistant thinks out loud, calls the page's own tools, stops to ask one question, then answers with the live numbers. Enter sends, the paperclip attaches, the mic dictates, the model name opens a plain text menu.</p>
+    </header>
+
+    <nav class="toolbar" aria-label="Theme">
+      <span class="toolbar__count">10 elements</span>
+      <span class="toolbar__spacer"></span>
+      <button type="button" class="theme-toggle" id="theme" aria-label="Switch color theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+        <span>Theme</span>
+      </button>
+      <span class="toolbar__version" id="version" title="Build version"></span>
+    </nav>
+
+    <section class="sheet" id="sheet" aria-label="Paper elements"></section>
+  </main>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <script src="gallery.js"></script>
+</body>
+</html>

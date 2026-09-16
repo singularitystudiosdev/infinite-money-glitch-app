@@ -1,0 +1,3737 @@
+/* app.css: the shell around the Paper elements. Layout only: every color,
+   radius, shadow, duration and spacing is a token from styles.css, and
+   every component keeps its look from components.css. */
+
+.app {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* one touch-target floor for every control: 36 with a mouse, 44 under a
+   finger or on a phone-width page (the emulator page has a mouse, so the
+   width carries the floor there) */
+:root {
+  --target: 36px;
+}
+
+@media (pointer: coarse), (max-width: 720px) {
+  :root {
+    --target: 44px;
+  }
+}
+
+/* the rail's own toggle, at the right of New project; and the one that
+   brings the rail back, at the left of the chat head while it is folded */
+.app-side__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.app-side__row .app-side__new {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-side__toggle,
+.app-chat__open {
+  flex: none;
+  width: var(--target);
+  min-width: var(--target);
+  min-height: var(--target);
+  color: var(--color-text-secondary);
+}
+
+/* the chat head's own opener is only for narrow screens, where the folded
+   rail sits off the page; wide screens keep the toggle on the rail itself */
+.app-chat__open {
+  display: none;
+  align-self: center;
+  margin-right: var(--spacing-4);
+}
+
+.app-home__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.app-home__tools .btn--icon {
+  text-decoration: none;
+}
+
+/* the project's own menu at the right of the chat head, opening downward */
+.app-chat__menu {
+  margin-left: auto;
+}
+
+.app-chat__menu .btn--icon {
+  width: var(--spacing-32);
+  min-width: var(--spacing-32);
+  min-height: var(--spacing-32);
+}
+
+.app-chat__menu .c-menu {
+  top: calc(100% + var(--spacing-8));
+  bottom: auto;
+  right: 0;
+  left: auto;
+  min-width: 220px;
+  /* three groups: the menu runs to the window's foot before it scrolls */
+  max-height: calc(100dvh - 72px);
+  transform-origin: top right;
+}
+
+.c-notif {
+  left: 0;
+  translate: 0 0;
+  width: 336px;
+}
+
+.c-notif__action {
+  min-height: var(--spacing-32);
+  padding: 0 var(--spacing-8);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+button.c-notif__item {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--duration-100) var(--ease-standard);
+}
+
+button.c-notif__item:hover,
+button.c-notif__item:focus-visible {
+  background: var(--color-canvas);
+}
+
+.c-notif__item.is-unread .c-notif__text {
+  font-weight: 600;
+}
+
+.c-notif__foot {
+  padding: var(--spacing-8) var(--spacing-16) var(--spacing-12);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.c-notif__link,
+.app-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--color-ink);
+  font: var(--type-meta);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--color-hairline-strong);
+  text-underline-offset: 3px;
+}
+
+.c-notif__link:hover,
+.app-link:hover {
+  text-decoration-color: var(--color-ink);
+}
+
+.c-notif__empty .btn {
+  margin-top: var(--spacing-4);
+}
+
+a.c-menu__item {
+  text-decoration: none;
+}
+
+.c-menu__sep {
+  display: block;
+  height: 1px;
+  margin: var(--spacing-4) var(--spacing-6);
+  background: var(--color-hairline);
+}
+
+.c-menu__item--danger {
+  color: var(--color-danger);
+}
+
+/* ---------- view and pages ---------- */
+
+/* the page starts at the top of the window: nothing sits above the view */
+.app-view {
+  min-height: 0;
+  padding: var(--spacing-16);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.app-view[data-page="home"],
+.app-view[data-page="project"],
+.app-view[data-page="settings"] {
+  overflow: hidden;
+}
+
+/* a project page sits close to the top of the window */
+.app-view[data-page="project"] {
+  padding: var(--spacing-10) var(--spacing-16) var(--spacing-12);
+}
+
+.app-home,
+.app-project,
+.app-settings {
+  height: 100%;
+}
+
+.btn--primary {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn--danger {
+  color: var(--color-danger);
+}
+
+/* ---------- home ---------- */
+
+.app-dash {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.app-dash .c-dash__grid {
+  height: 100%;
+}
+
+a.c-dash__tile {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--duration-150) var(--ease-standard);
+}
+
+a.c-dash__tile:hover {
+  border-color: var(--color-hairline-strong);
+}
+
+.app-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 240px;
+  max-width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  transition: border-color var(--duration-150) var(--ease-standard);
+}
+
+.app-search:focus-within {
+  border-color: var(--color-hairline-strong);
+}
+
+.app-search__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-body);
+}
+
+.app-search__input:focus-visible {
+  /* the field's frame carries the focus border, so the input draws none */
+  outline: 2px solid transparent;
+  outline-offset: 0;
+}
+
+.app-search__input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+.app-search__input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.app-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
+.app-empty p {
+  margin: 0;
+}
+
+/* ---------- project ---------- */
+
+/* three panes: the projects rail, the chat, the right rail. The projects
+   rail folds to a slim column of icons on the toggle, the way ChatGPT's
+   does, the columns easing over */
+.app-project {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(340px, 30%);
+  gap: 0 var(--spacing-16);
+  min-height: 0;
+  transition: grid-template-columns var(--duration-300) var(--ease-standard);
+}
+
+.app-project.is-side-open {
+  grid-template-columns: 264px minmax(0, 1fr) minmax(340px, 30%);
+}
+
+/* a project still in setup has no rail: the chat has the page */
+.app-project.is-setup {
+  grid-template-columns: 56px minmax(0, 1fr) 0;
+}
+
+.app-project.is-setup.is-side-open {
+  grid-template-columns: 264px minmax(0, 1fr) 0;
+}
+
+/* the setup checklist as a card in the thread */
+/* a finished step opens again to change its answer: Change at the row's
+   right, and while it is open the check stays on the row */
+.c-flow__change {
+  flex: none;
+  align-self: center;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity var(--duration-150) var(--ease-standard);
+}
+
+.c-flow__row.is-done:hover .c-flow__change,
+.c-flow__row.is-done .c-flow__row-head:focus-visible .c-flow__change {
+  opacity: 1;
+}
+
+.c-flow__row.is-redo .c-flow__check {
+  border-color: transparent;
+  background: var(--color-ink);
+}
+
+.app-thread__setup .c-flow {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: auto;
+  box-shadow: none;
+}
+
+.app-project__side {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-16);
+  --rail-bg: color-mix(in oklab, var(--color-canvas) 50%, var(--color-surface));
+  background: var(--rail-bg);
+}
+
+/* folded: the top row stacks into a column of icons (toggle, New, find),
+   the list and the search go, and the foot is the avatar alone */
+.app-project:not(.is-side-open) .app-side__top {
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-4);
+}
+
+.app-project:not(.is-side-open) .app-side__row {
+  flex-direction: column;
+}
+
+.app-project:not(.is-side-open) .app-side__toggle {
+  order: -1;
+}
+
+.app-project:not(.is-side-open) .app-side__row .app-side__new {
+  flex: none;
+  width: var(--target);
+  padding: 0;
+  justify-content: center;
+}
+
+.app-project:not(.is-side-open) .app-side__new span,
+.app-project:not(.is-side-open) .app-side__search,
+.app-project:not(.is-side-open) .app-side__list,
+.app-project:not(.is-side-open) .app-side__empty,
+.app-project:not(.is-side-open) .app-side__foot .app-side__text,
+.app-project:not(.is-side-open) .app-side__foot > svg {
+  display: none;
+}
+
+/* the find button stands in for the search field while folded */
+.app-side__find {
+  display: none;
+}
+
+.app-project:not(.is-side-open) .app-side__find {
+  display: inline-flex;
+}
+
+.app-project:not(.is-side-open) .app-side__foot {
+  justify-content: center;
+  padding: var(--spacing-10) 0;
+}
+
+/* the foot is always the rail's last row, even when the list above it is
+   not drawn, so the avatar stays at the bottom like ChatGPT's */
+.app-side__foot {
+  grid-row: 3;
+  align-self: end;
+}
+
+.app-side__top {
+  display: grid;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-12) var(--spacing-8);
+}
+
+.app-side__new {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-height: var(--target);
+  padding: 0 var(--spacing-10);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-label);
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.app-side__new:hover {
+  background: var(--color-surface);
+}
+
+.app-side__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-height: var(--target);
+  padding: 0 var(--spacing-10);
+  border-radius: var(--radius-8);
+  color: var(--color-text-secondary);
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.app-side__search:focus-within {
+  background: var(--color-surface);
+}
+
+.app-side__search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-body);
+}
+
+.app-side__search input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+}
+
+.app-side__search input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+.app-side__search input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.app-side__list {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-2);
+  /* room inside the scroller above and below the rows, so the current
+     row's edge and shadow are never cut at the list's top or foot */
+  margin: calc(-1 * var(--spacing-4)) 0 0;
+  padding: var(--spacing-4) var(--spacing-8) var(--spacing-8);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.app-side__list:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+/* the list is the rows' offset parent, so the reorder maths in side.js
+   reads row positions in the list's own coordinates */
+.app-side__list {
+  position: relative;
+}
+
+/* rows reorder on a pointer drag; a vertical touch drag still scrolls */
+.app-side__list li {
+  position: relative;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.app-side__list.is-reordering,
+.app-side__list.is-reordering li {
+  cursor: grabbing;
+}
+
+/* the row in hand lifts and rides over the others */
+.app-side__list li.is-dragging {
+  z-index: 2;
+  will-change: transform;
+}
+
+.app-side__list li.is-dragging .app-side__item {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-8);
+}
+
+/* one line a row, 36px tall, the name centred on it: the height and gap of
+   a ChatGPT sidebar row */
+.app-side__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-10);
+  min-height: var(--target);
+  padding: var(--spacing-6) var(--spacing-8);
+  border-radius: var(--radius-8);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: background-color var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.app-side__item:hover {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.app-side__item[aria-current="page"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-2);
+}
+
+.app-side__dot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--color-hairline-strong);
+  border-radius: var(--radius-full);
+}
+
+.app-side__dot svg { width: 9px; height: 9px; }
+
+/* thinking agent: the dot is a spinning circle; idle: a pause glyph,
+   filled on the open chat's row */
+.app-side__dot.is-idle { color: var(--color-text-tertiary); }
+.app-side__item[aria-current="page"] .app-side__dot.is-idle { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-bg, #fff); }
+.app-side__dot.is-busy { border-color: transparent; color: var(--color-ink); }
+
+/* the row's 3-dot menu trigger, on hover only, and the menu itself */
+.app-side__list li { position: relative; }
+.app-side__dots {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-6, 6px);
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-full, 999px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+.app-side__dots svg { width: 14px; height: 14px; }
+.app-side__list li:hover .app-side__dots,
+.app-side__dots:focus-visible,
+.app-side__dots[aria-expanded="true"] { opacity: 1; }
+.app-side__dots:hover { background: color-mix(in srgb, var(--color-text-primary) 6%, transparent); color: var(--color-ink); }
+.app-side__menu { top: 100%; right: var(--spacing-8, 8px); z-index: 6; }
+
+.app-side__text {
+  display: grid;
+  flex: 1;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.app-side__name {
+  overflow: hidden;
+  font: var(--type-label);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-side__sub {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* a true circle for one digit (18 by 18, the number centred); a two
+   character count widens into a short pill of the same height */
+.app-side__count {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-ok);
+  color: var(--color-canvas);
+  font: var(--type-meta);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.app-side__count.is-needs {
+  background: oklch(68% 0.19 52);
+}
+
+/* every count badge is a true circle: one fixed size that still holds
+   the widest count it can show, 9+, so it never stretches into a pill */
+.app-side__count,
+.c-dash__badge {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.app-side__empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-16);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* a button: pressing it opens the settings modal */
+.app-side__foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-10);
+  width: 100%;
+  padding: var(--spacing-10) var(--spacing-12);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+/* the rows melt into the foot over a light band, no line: a row scrolled
+   under the foot dissolves rather than being cut */
+.app-side__foot::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--spacing-16);
+  background: linear-gradient(to bottom, transparent, var(--rail-bg));
+  pointer-events: none;
+}
+
+.app-side__foot:hover {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-16) var(--radius-16);
+}
+
+.app-side__foot .app-side__name {
+  color: var(--color-ink);
+}
+
+.app-avatar--small {
+  width: var(--spacing-32);
+  height: var(--spacing-32);
+  font: var(--type-meta);
+  font-weight: 600;
+}
+
+/* a chosen picture fills the circle; the account section shows it large
+   with the camera badge tucked on its edge, the way ChatGPT's edit-profile
+   sheet does */
+.app-avatar {
+  overflow: hidden;
+}
+
+.app-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* the base .app-avatar sizes come later in this file, so the big one
+   names both classes to keep its 72px */
+.app-avatar.app-avatar--big {
+  width: 72px;
+  height: 72px;
+  font: var(--type-title);
+  font-weight: 600;
+}
+
+.app-account__pic {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+
+/* the whole picture is the control that changes it (a 72px target under
+   a finger); the camera badge on its edge is only the icon */
+.app-account__pic .app-account__cam {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.app-account__pic .app-account__cam::before {
+  display: none;
+}
+
+.app-account__pic .app-account__cam:hover,
+.app-account__pic .app-account__cam:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.app-account__pic .app-account__cam svg {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  box-sizing: content-box;
+  width: 14px;
+  height: 14px;
+  padding: 7px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-2);
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.app-account__pic .app-account__cam:hover svg {
+  background: var(--color-canvas);
+}
+
+.app-account__remove {
+  justify-self: start;
+  min-height: 28px;
+  margin-top: var(--spacing-4);
+  padding: 0 var(--spacing-8);
+  font: var(--type-meta);
+}
+
+.app-project__chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-chat {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  align-content: start;
+  width: 100%;
+  height: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  gap: 0;
+}
+
+.app-chat__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-4) var(--spacing-12);
+  /* no line under the head: a scrolled thread fades out beneath it instead
+     (the band on .app-thread-wrap::before) */
+  padding: 0 var(--spacing-4) var(--spacing-8);
+}
+
+.app-chat__title {
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.app-chat__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-chat__status svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.app-chat__status span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* the thread dissolves at its edges: a short fade at the top under the
+   head, a longer one at the foot where it runs under the composer, so a
+   line never cuts flat. The foot padding lets the last line scroll clear
+   of the fade */
+/* an empty thread still holds its row, so the composer stays at the foot
+   (the gallery's .c-thread:empty rule hid it) */
+.app-thread:empty {
+  display: grid;
+}
+
+/* the scroller sits inside a wrap that carries the edge fades as overlays,
+   so nothing sits in the scroll flow and the scrollbar gutter stays clear */
+.app-thread-wrap {
+  position: relative;
+  display: grid;
+  min-height: 0;
+}
+
+/* lines read from the top, the way a conversation does, and scroll once
+   they fill the frame; a little air at the foot before the composer */
+.app-thread {
+  align-content: start;
+  max-height: none;
+  padding-top: var(--spacing-4);
+  padding-right: var(--spacing-12);
+  padding-bottom: var(--spacing-12);
+}
+
+.app-thread-wrap::before,
+.app-thread-wrap::after {
+  content: "";
+  position: absolute;
+  right: var(--spacing-12);
+  left: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-150) var(--ease-standard);
+}
+
+/* only where a line really runs under the edge: the foot once the thread
+   overflows, the top once it has been scrolled */
+.app-thread-wrap:has(.is-overflowing)::after,
+.app-thread-wrap:has(.is-scrolled)::before {
+  opacity: 1;
+}
+
+/* a light fade, the way the rail's rows dissolve into its foot: solid at
+   the head and gone by 32px, so a line scrolled under the head melts
+   rather than being cut */
+.app-thread-wrap::before {
+  top: 0;
+  height: var(--spacing-32);
+  background: linear-gradient(to bottom, var(--color-canvas) 20%, color-mix(in oklab, var(--color-canvas) 60%, transparent) 60%, transparent);
+}
+
+/* as tall as the thread's foot padding and no taller, so the last line at
+   the foot is never under it; only a line scrolled past the edge dissolves */
+.app-thread-wrap::after {
+  bottom: 0;
+  height: var(--spacing-12);
+  background: linear-gradient(to bottom, transparent, var(--color-canvas));
+}
+
+/* a link in the agent's line, a tool call or a log row: what it acted on,
+   underlined in the hairline so the line still reads as prose; the
+   underline darkens under the pointer */
+.c-msg__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-hairline-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--duration-150) var(--ease-standard);
+}
+
+.c-msg__link:hover {
+  text-decoration-color: var(--color-ink);
+}
+
+.c-msg__link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-4);
+}
+
+/* while the microphone's level drives the bars, their own wave stops and
+   each bar follows the level with a short ease */
+[data-mic].is-live .btn__wave-bar {
+  animation: none;
+  transition: transform var(--duration-100) linear;
+}
+
+/* the Ask / Yolo chip beside the model: its own icon in front of the word */
+.app-mode {
+  gap: var(--spacing-6);
+}
+
+.app-mode > svg:first-child {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* the status line is for assistive tech only: read out, never drawn (the
+   gallery's toast is retired) */
+#status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  opacity: 1;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* the rail row's count, in the needs orange, sitting in the row's flow: the
+   one notification a connector waiting on you ever raises */
+.app-side__needs {
+  position: static;
+  flex: none;
+  margin-left: auto;
+  background: var(--color-status-needs);
+  color: var(--hex-surface);
+}
+
+/* a paused project says so beside its title: a quiet pill with a dot */
+.app-chat__paused {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: 1px var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--hex-ink) 8%, transparent);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+.app-chat__paused::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+/* the pause at the strip's right edge: Pause while the agent works,
+   Resume while it holds; one press either way (Pause asks first) */
+.app-now__pause {
+  flex: none;
+  gap: var(--spacing-4);
+  min-height: 24px;
+  margin-left: auto;
+  padding: 0 var(--spacing-8);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+.app-now__pause svg {
+  width: 12px;
+  height: 12px;
+}
+@media (pointer: coarse) {
+  /* the pause button reaches the floor without fattening the strip */
+  .app-now__pause {
+    min-height: var(--target);
+    margin-block: calc(-1 * var(--spacing-10));
+  }
+}
+
+/* held: the icon is a pause mark and the line stops shimmering */
+.app-now.is-paused .c-composer__status-text {
+  background: none;
+  color: var(--color-text-secondary);
+  animation: none;
+}
+
+
+/* what you said, in a bubble: a tint of ink on the canvas, at the right */
+.app-chat .c-msg--user {
+  background: color-mix(in oklab, var(--hex-ink) 7%, var(--color-canvas));
+}
+
+/* the question form: picking a row is instant. The number turns black and
+   the row tints the moment you pick, and the one you left snaps back, with
+   no cross-fade to catch mid-way on a quick 2 to 3 */
+.app-chat .c-ask__option,
+.app-chat .c-ask__num {
+  transition: none;
+}
+
+/* every row is a clean rectangle between its dividers, so the picked
+   row's tint has no odd corner where the radius met the line above */
+.app-chat .c-ask__option,
+.app-chat .c-ask__option + .c-ask__option {
+  border-radius: 0;
+}
+
+/* only the picked row is tinted: a focused row shows a ring instead, and
+   under a finger a tap leaves no hover tint behind on the row it left */
+.app-chat .c-ask__option:focus-visible:not(.is-selected) {
+  background: transparent;
+}
+
+.app-chat .c-ask__option:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--color-hairline-strong);
+}
+
+@media (hover: none) {
+  .app-chat .c-ask__option:hover:not(.is-selected) {
+    background: transparent;
+  }
+}
+
+/* the files sent with a line: small chips under its text, or the whole
+   line when nothing was typed */
+.c-msg__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-6);
+}
+
+.c-msg--files-only .c-msg__files {
+  margin-top: 0;
+}
+
+.c-msg__file {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--spacing-4) var(--spacing-10) var(--spacing-4) var(--spacing-8);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--type-meta);
+  overflow-wrap: anywhere;
+}
+
+.c-msg__file svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.app-chat__head {
+  margin-bottom: var(--spacing-4);
+}
+
+.app-chat .c-chat__reopen {
+  margin: var(--spacing-8) 0;
+}
+
+.app-turn__when {
+  margin-left: auto;
+  color: var(--color-text-quaternary);
+  font: var(--type-meta);
+  white-space: nowrap;
+}
+
+/* what the agent is on right now sits on the composer's top edge, always:
+   the label, then the line, cut with an ellipsis; while a run of yours is
+   in flight the same strip carries its step */
+.app-chat .c-composer {
+  max-width: none;
+}
+
+.app-now {
+  min-width: 0;
+}
+
+.app-now__label {
+  flex: none;
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.app-now__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* a question the agent asked, in the thread: the question, the options as
+   buttons, and once one is picked the card folds to the answer */
+.app-ask {
+  display: grid;
+  gap: var(--spacing-10);
+  max-width: 80%;
+  padding: var(--spacing-12) var(--spacing-16);
+  border-radius: var(--radius-16);
+  box-shadow: none;
+}
+
+.app-ask__q {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-8);
+  font: var(--type-label);
+  font-weight: 600;
+  text-wrap: pretty;
+}
+
+.app-ask__q svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+}
+
+.app-ask__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.app-ask__options .btn {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-height: var(--spacing-48);
+  padding: var(--spacing-6) var(--spacing-12);
+  white-space: normal;
+  text-align: left;
+}
+
+.app-ask__note {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-ask__answer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.app-ask.is-answered .app-ask__q {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* the plan drafted from the first message: numbered steps, the changes
+   asked for since under them, and one button that agrees to it; agreed,
+   the card keeps the record in the secondary tone and loses the button */
+.app-plan {
+  display: grid;
+  gap: var(--spacing-10);
+  max-width: 80%;
+  padding: var(--spacing-12) var(--spacing-16);
+  border-radius: var(--radius-16);
+  box-shadow: none;
+}
+
+.app-plan__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.app-plan__head > svg {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+/* agreed: a small green mark at the right of the head, on one line */
+.app-plan__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-left: auto;
+  color: var(--color-status-ok);
+  font: var(--type-meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-plan__state svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* each step: its title on the line, the detail under it in the quiet tone */
+.app-plan__step {
+  display: block;
+  font: var(--type-label);
+  font-weight: 500;
+}
+
+.app-plan__detail {
+  display: block;
+  margin-top: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-plan__steps {
+  display: grid;
+  gap: var(--spacing-10);
+  margin: 0;
+  padding-left: var(--spacing-20);
+  color: var(--color-ink);
+  font: var(--type-body);
+  text-wrap: pretty;
+}
+
+.app-plan__steps li::marker {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* a change asked for in the chat joins the list with its own lead-in */
+.app-plan__change::before {
+  content: "Changed: ";
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.app-plan__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-8) var(--spacing-12);
+}
+
+.app-plan__hint {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-plan.is-agreed .app-plan__steps {
+  color: var(--color-text-secondary);
+}
+
+/* the rail fits the page: the analytics or the checklist take what they
+   need, the activity card takes the rest and scrolls inside itself */
+.app-project__rail {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* the rail's arrangement is picked from the chat head's menu: a labelled
+   group under a rule */
+.c-menu__rule {
+  display: grid;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-hairline);
+}
+
+/* the cards of the chosen arrangement; the rows are set per layout so the
+   last card takes what is left */
+/* the cards sit a touch closer together than the page's other panels, so
+   an arrangement of three fits the window without scrolling */
+.app-rail__cards {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-10);
+  min-height: 0;
+}
+
+/* when the cards cannot all fit, the rail scrolls as a whole, with the
+   thread's thin bar that shows on hover */
+/* the cards keep one overflow mode and a reserved scrollbar gutter whether
+   or not they scroll, so a bar's width never changes when the rail starts
+   or stops scrolling (a chat switch, a lane switch); only the scrolling
+   state shows the bar */
+.app-rail__cards {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+.app-rail__cards.is-scrolling:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.app-rail__cards > [data-card] {
+  display: grid;
+}
+
+/* in the fitted arrangement only the card at the foot gives way; a log
+   that is not at the foot, or any log once the rail scrolls, keeps its list
+   to a few rows and scrolls inside */
+.app-rail__cards:not(.is-scrolling) > [data-card]:last-child {
+  min-height: 0;
+}
+
+.app-rail__cards.is-scrolling .app-log__list {
+  max-height: 256px;
+}
+
+/* a log above other cards, and the updates card wherever it sits, shows
+   three rows and scrolls inside, so what sits under it stays in view */
+.app-rail__cards > [data-card]:not(:last-child) .app-log__list {
+  max-height: 208px;
+}
+
+/* the updates list is sized by log.js to exactly three rows wherever it
+   sits (min and max); when that does not fit under the numbers the rail
+   scrolls rather than the list shrinking */
+.app-rail__cards .app-log--updates .app-log__list {
+  max-height: none;
+}
+
+/* the updates card is as tall as its three rows and no taller, even in the
+   rail's flexible last slot; its rows are only the head and the list, so
+   no empty track adds a gap under the list */
+.app-rail__cards .app-log--updates {
+  align-self: start;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.app-rail__cards .app-log--tasks {
+  grid-template-rows: auto auto;
+}
+
+.app-rail__cards > [data-card]:empty {
+  display: none;
+}
+
+.app-running {
+  display: grid;
+  gap: var(--spacing-10);
+}
+
+.app-running .c-graph {
+  padding: var(--spacing-12);
+  gap: var(--spacing-8);
+}
+
+/* the graph's label shares the line with its number and badge */
+.app-running .c-graph__head {
+  align-items: baseline;
+  gap: var(--spacing-8);
+}
+
+.app-running .c-graph__label {
+  width: auto;
+  margin-right: auto;
+}
+
+.app-running .c-graph__value {
+  font-size: 26px;
+  line-height: 30px;
+}
+
+/* two by two, the tiles keep the number and badge on one line */
+.app-stats:not(.app-stats--three) .c-stat {
+  gap: var(--spacing-2);
+  padding: var(--spacing-10) var(--spacing-12);
+}
+
+.app-stats:not(.app-stats--three) .c-stat__row {
+  flex-wrap: nowrap;
+  gap: var(--spacing-6);
+}
+
+.app-stats:not(.app-stats--three) .c-stat__value {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.app-stats:not(.app-stats--three) .c-stat__delta {
+  padding: var(--spacing-2) var(--spacing-6);
+}
+
+/* a finished mission needs no step line under its bar */
+.app-log .c-missions__item.is-done .c-missions__think {
+  display: none;
+}
+
+/* the lane chips under the Activity head (the Tasks card holds them in
+   its own head) */
+.app-log--full .app-log__lanes {
+  justify-self: start;
+  margin-top: calc(-1 * var(--spacing-4));
+}
+
+/* a subagent's task is one tight row: title, bar, no site, no step line.
+   The mark keeps the manager rows' size so the bars line up across the
+   lane switch */
+.app-log .c-missions__item.is-quick {
+  padding: var(--spacing-6) 0;
+}
+
+.app-log .c-missions__item.is-quick .c-missions__think {
+  display: none;
+}
+
+/* ---------- how a finished task reads (data-done-fx on the card) ---------- */
+
+/* check mark and fold away: a green check for a mark, a green bar, Done */
+.app-log[data-done-fx="check"] .c-missions__item.is-done .c-missions__mark,
+.app-log[data-done-fx="fold"] .c-missions__item.is-done .c-missions__mark {
+  background: color-mix(in oklab, var(--color-status-ok) 16%, transparent);
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+}
+
+.app-log[data-done-fx="check"] .c-missions__item.is-done .c-missions__bar > span,
+.app-log[data-done-fx="fold"] .c-missions__item.is-done .c-missions__bar > span,
+.app-log[data-done-fx="flash"] .c-missions__item.is-done .c-missions__bar > span {
+  background: var(--color-status-ok);
+}
+
+.app-log[data-done-fx="check"] .c-missions__item.is-done .c-missions__pct,
+.app-log[data-done-fx="fold"] .c-missions__item.is-done .c-missions__pct,
+.app-log[data-done-fx="flash"] .c-missions__item.is-done .c-missions__pct {
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  font-weight: 600;
+}
+
+/* strike through: the title is crossed out and steps back, the bar too */
+.app-log[data-done-fx="strike"] .c-missions__item.is-done .c-missions__title {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.app-log[data-done-fx="strike"] .c-missions__item.is-done .c-missions__mark,
+.app-log[data-done-fx="strike"] .c-missions__item.is-done .c-missions__pct {
+  color: var(--color-text-secondary);
+}
+
+.app-log[data-done-fx="strike"] .c-missions__item.is-done .c-missions__bar > span {
+  background: var(--color-hairline-strong);
+}
+
+/* green flash: the row lights up for a moment and settles */
+.app-log[data-done-fx="flash"] .c-missions__item.is-done {
+  border-radius: var(--radius-8);
+  animation: app-done-flash var(--duration-1000) var(--ease-standard) both;
+}
+
+@keyframes app-done-flash {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-status-ok) 0%, transparent);
+    background: transparent;
+  }
+  20% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-status-ok) 18%, transparent);
+    background: color-mix(in oklab, var(--color-status-ok) 18%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+    background: transparent;
+  }
+}
+
+/* the project's own log: the missions with their bars, then the entries */
+.app-log {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--spacing-8);
+  min-height: 0;
+  padding: var(--spacing-12);
+}
+
+/* the full card has a fifth row, the lane chips under the head: the
+   missions keep their own height (a scroll container's track would
+   otherwise shrink to nothing and paint one row as a sliver) and the list
+   takes what is left and scrolls inside */
+.app-log--full {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
+
+.app-log--full .app-log__list {
+  min-height: 0;
+}
+
+.app-log__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+/* the subagents' lane is capped at two rows by the script and scrolls the
+   rest; the manager's lane is never capped */
+.app-log__missions {
+  display: grid;
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  /* the gutter is reserved in both lanes, so the bars are one width
+     whether the list scrolls (subagents) or not (manager) */
+  scrollbar-gutter: stable;
+}
+
+.app-log__missions:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.app-log__missions:empty {
+  display: none;
+}
+
+.app-log__missions .c-missions__item:first-child {
+  padding-top: 0;
+}
+
+/* the rows that fit show; the rest scroll inside the card */
+.app-log__list {
+  display: grid;
+  align-content: start;
+  min-height: 96px;
+  margin: 0;
+  padding: 0 var(--spacing-4) 0 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+.app-log__list:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.app-log__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-10);
+  padding: var(--spacing-6) 0;
+}
+
+/* mission rows in the rail sit a little tighter than in the gallery */
+.app-log .c-missions__item {
+  padding: var(--spacing-8) 0;
+}
+
+.app-log__row + .app-log__row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-log__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--spacing-24);
+  height: var(--spacing-24);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-text-secondary);
+}
+
+.app-log__mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.app-log__row[data-kind="needs"] .app-log__mark {
+  background: color-mix(in oklab, oklch(68% 0.19 52) 18%, transparent);
+  color: var(--color-ink);
+}
+
+.app-log__row[data-kind="breakthrough"] .app-log__mark,
+.app-log__row[data-kind="insight"] .app-log__mark {
+  color: var(--color-ink);
+}
+
+.app-log__text {
+  font: var(--type-body);
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+
+.app-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-10);
+}
+
+.app-stats .c-stat {
+  padding: var(--spacing-12);
+}
+
+.app-stats--three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.app-stats .c-stat {
+  max-width: none;
+  min-width: 0;
+}
+
+/* the hover card follows the pointer: placed in px by the script, and it
+   eases between points rather than jumping */
+.app-graph .c-graph__tip {
+  top: 0;
+  left: 0;
+  transition: transform var(--duration-100) var(--ease-standard);
+}
+
+/* three across: a compact tile, every one the same shape: the label, the
+   number, then the badge on its own line, so the row reads level */
+.app-stats--three .c-stat {
+  align-content: start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-12);
+}
+
+.app-stats--three .c-stat__row {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-4);
+}
+
+.app-stats--three .c-stat__value {
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.app-stats--three .c-stat__delta {
+  padding: var(--spacing-2) var(--spacing-6);
+}
+
+/* a small tile is a press target: it takes the big spot on a click, and
+   the two morph between places (view-transition-name per metric) */
+.app-tile {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-150) var(--ease-standard),
+    transform var(--duration-150) var(--ease-standard);
+}
+
+.app-tile:hover {
+  border-color: var(--color-hairline-strong);
+  transform: translateY(-1px);
+}
+
+.app-tile:active {
+  transform: translateY(0);
+}
+
+/* a page change is as long as its root fade and no longer, so the page
+   answers clicks again sooner; the morph timing belongs to the tile swap */
+::view-transition-group(*) {
+  animation-duration: var(--duration-200);
+}
+
+html[data-vt="swap"]::view-transition-group(*) {
+  animation-duration: var(--duration-300);
+  animation-timing-function: var(--ease-standard);
+}
+
+.app-flow {
+  width: 100%;
+  aspect-ratio: auto;
+}
+
+.c-flow__done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.c-task .app-link {
+  margin-top: calc(-1 * var(--spacing-4));
+}
+
+/* ---------- settings ---------- */
+
+.app-settings .c-settings {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.app-settings .c-settings__body {
+  overflow-y: auto;
+}
+
+a.c-settings__item {
+  text-decoration: none;
+}
+
+.c-settings__item[aria-current="page"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-2);
+}
+
+.c-settings__sub {
+  margin: var(--spacing-8) 0 calc(-1 * var(--spacing-8));
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+
+.app-account {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+}
+
+.app-avatar {
+  display: grid;
+  place-items: center;
+  width: var(--spacing-40);
+  height: var(--spacing-40);
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.app-account__text {
+  display: grid;
+}
+
+.app-account__name {
+  font: var(--type-title);
+}
+
+.app-account__email {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-form {
+  display: grid;
+  gap: var(--spacing-12);
+  justify-items: start;
+}
+
+.app-form .c-card__field {
+  justify-self: stretch;
+}
+
+.app-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) 0;
+}
+
+.app-row + .app-row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-row > svg {
+  color: var(--color-text-secondary);
+}
+
+.app-row__text {
+  display: grid;
+  flex: 1;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.app-row__title {
+  font: var(--type-label);
+  color: var(--color-ink);
+}
+
+.app-row__sub {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  text-wrap: pretty;
+}
+
+.app-rows__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-12);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-pill {
+  display: inline-block;
+  padding: 1px var(--spacing-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-status-ok) 14%, transparent);
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
+  font: var(--type-meta);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.app-pill--muted {
+  background: var(--color-canvas);
+  color: var(--color-text-secondary);
+}
+
+.app-switches {
+  display: grid;
+}
+
+.app-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) 0;
+  cursor: pointer;
+}
+
+.app-switch + .app-switch {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-switch__text {
+  display: grid;
+  flex: 1;
+  gap: var(--spacing-2);
+}
+
+.app-switch__label {
+  font: var(--type-label);
+  color: var(--color-ink);
+}
+
+.app-switch__hint {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+.app-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.app-switch__track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-hairline-strong);
+  transition: background-color var(--duration-150) var(--ease-standard);
+}
+
+.app-switch__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  transition: translate var(--duration-150) var(--ease-standard);
+}
+
+.app-switch__input:checked + .app-switch__track {
+  background: var(--color-ink);
+}
+
+.app-switch__input:checked + .app-switch__track::after {
+  translate: 16px 0;
+}
+
+.app-switch__input:focus-visible + .app-switch__track {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.app-switch:has(.app-switch__input:disabled) {
+  cursor: default;
+  color: var(--color-text-secondary);
+}
+
+.app-switch__input:disabled + .app-switch__track {
+  opacity: 0.5;
+}
+
+.app-field--narrow {
+  max-width: 220px;
+}
+
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-body);
+}
+
+.app-table th {
+  padding: var(--spacing-6) var(--spacing-8) var(--spacing-6) 0;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+  text-align: left;
+}
+
+.app-table td {
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) 0;
+  border-bottom: 1px solid var(--color-hairline);
+  vertical-align: middle;
+}
+
+.app-table__id {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-table .btn--icon {
+  width: var(--spacing-32);
+  min-width: var(--spacing-32);
+  min-height: var(--spacing-32);
+}
+
+.c-settings__pack-body svg {
+  color: var(--color-text-secondary);
+}
+
+/* ---------- activity ---------- */
+
+.app-activity {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--spacing-16);
+}
+
+.app-activity__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-8) var(--spacing-12);
+  margin-bottom: var(--spacing-8);
+}
+
+.app-activity__head .c-insights__filters {
+  margin-right: auto;
+}
+
+.app-activity__head .c-composer__spacer {
+  display: none;
+}
+
+.app-activity__day {
+  margin: var(--spacing-16) 0 var(--spacing-4);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-weight: 500;
+}
+
+.app-activity__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-10) 0;
+}
+
+.app-activity__row + .app-activity__row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-activity__row > svg {
+  color: var(--color-text-secondary);
+}
+
+.app-activity__row.is-unread .app-row__title {
+  font-weight: 600;
+}
+
+.app-activity__time {
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- missing ---------- */
+
+.app-missing {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-12);
+  max-width: 48ch;
+  margin: var(--spacing-48) auto;
+  color: var(--color-text-secondary);
+}
+
+.app-missing__title {
+  margin: 0;
+  font: var(--type-title);
+  color: var(--color-ink);
+}
+
+.app-missing p {
+  margin: 0;
+}
+
+/* ---------- dialogs ---------- */
+
+.app-dialog {
+  width: min(480px, calc(100vw - var(--spacing-32)));
+  max-height: calc(100dvh - var(--spacing-32));
+  margin: auto;
+  padding: var(--spacing-24);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-16);
+}
+
+.app-dialog::backdrop {
+  background: color-mix(in oklab, var(--hex-ink) 40%, transparent);
+}
+
+/* the "other" pack: a dollar amount typed in the price slot. The dollar
+   sign and the number share one framed field, sized like the row's own
+   text, and the frame carries the focus */
+.c-settings__pack--other .c-settings__pack-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 32px;
+  padding-left: var(--spacing-8);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  transition: border-color var(--duration-150) var(--ease-standard),
+    box-shadow var(--duration-150) var(--ease-standard),
+    background-color var(--duration-150) var(--ease-standard);
+}
+
+.c-settings__pack--other .c-settings__pack-price:focus-within {
+  border-color: var(--color-ink);
+  background: var(--color-canvas);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--hex-ink) 10%, transparent);
+}
+
+.c-settings__other {
+  width: 56px;
+  height: 100%;
+  min-height: 0;
+  padding: 0 var(--spacing-8) 0 var(--spacing-2);
+  border: 0;
+  border-radius: 0 var(--radius-8) var(--radius-8) 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-label);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.c-settings__other::-webkit-outer-spin-button,
+.c-settings__other::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* the frame around it shows the focus, so the box draws none of its own */
+.c-settings__other:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+}
+
+.c-settings__pack--other:has(.c-settings__other:focus-visible) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* the burst's canvas: the whole screen, in the top layer, never in the
+   way of a pointer */
+.app-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.app-confetti:popover-open {
+  display: block;
+}
+
+/* the settings modal: wide, a fixed height, the sections rail down its
+   left edge and the open section scrolling on its own at the right */
+.app-dialog--settings {
+  width: min(880px, calc(100vw - var(--spacing-32)));
+  height: min(640px, calc(100dvh - var(--spacing-32)));
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-dialog--settings .c-settings {
+  position: relative;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.app-dialog--settings .c-settings__body {
+  overflow-y: auto;
+  padding-right: var(--spacing-64);
+}
+
+.app-dialog--settings .app-dialog__x,
+.app-settings .app-settings__x {
+  position: absolute;
+  top: var(--spacing-12);
+  right: var(--spacing-12);
+}
+
+/* the settings page carries the same cross at its top right, back home */
+.app-settings .c-settings {
+  position: relative;
+}
+
+.app-settings .app-settings__x {
+  text-decoration: none;
+}
+
+/* the word beside the cross shows on phones only */
+.app-dialog__x-label {
+  display: none;
+}
+
+.app-dialog__head {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-4);
+  padding-right: var(--spacing-40);
+  margin-bottom: var(--spacing-16);
+}
+
+.app-dialog__title {
+  margin: 0;
+  font: var(--type-title);
+  text-wrap: balance;
+}
+
+.app-dialog__text {
+  margin: 0;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.app-dialog__x {
+  position: absolute;
+  top: calc(-1 * var(--spacing-8));
+  right: calc(-1 * var(--spacing-8));
+}
+
+.app-dialog__form {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.app-dialog__area {
+  min-height: 72px;
+  padding: var(--spacing-8) var(--spacing-12);
+  resize: vertical;
+}
+
+.app-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-8);
+}
+
+.app-keys {
+  display: grid;
+  margin: 0;
+}
+
+.app-keys__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  padding: var(--spacing-8) 0;
+}
+
+.app-keys__row + .app-keys__row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-keys dt {
+  color: var(--color-text-secondary);
+}
+
+.app-keys dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px var(--spacing-6);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-4);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font: var(--type-meta);
+  font-family: var(--font-body);
+  text-align: center;
+}
+
+.app-dialog--palette {
+  width: min(600px, calc(100vw - var(--spacing-32)));
+  margin-top: 12dvh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-palette__field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-10);
+  padding: var(--spacing-12) var(--spacing-16);
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+}
+
+.app-palette__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: var(--type-body);
+  font-size: 15px;
+}
+
+.app-palette__input:focus-visible {
+  /* the field's frame carries the focus border, so the input draws none */
+  outline: 2px solid transparent;
+  outline-offset: 0;
+}
+
+.app-palette__input::placeholder {
+  color: var(--color-text-quaternary);
+}
+
+.app-palette__list {
+  display: grid;
+  max-height: min(400px, 50dvh);
+  padding: var(--spacing-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.app-palette__row[aria-selected="true"] {
+  background: var(--color-canvas);
+}
+
+.app-palette__hint {
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-palette__empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-10);
+  color: var(--color-text-secondary);
+}
+
+.app-palette__foot {
+  display: flex;
+  gap: var(--spacing-16);
+  padding: var(--spacing-8) var(--spacing-16);
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+  font: var(--type-meta);
+}
+
+/* ---------- page transitions ---------- */
+
+/* a route change cross-fades the page, nothing slides; the rail and the
+   top strip carry their own names so they stay put across a chat switch,
+   and a tile swap leaves the rest of the page alone entirely */
+::view-transition-old(root) {
+  animation: app-out var(--duration-150) var(--ease-standard) both;
+}
+
+::view-transition-new(root) {
+  animation: app-in var(--duration-200) var(--ease-standard-decelerate) both;
+}
+
+html[data-vt="swap"]::view-transition-old(root),
+html[data-vt="swap"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.app-project__side {
+  view-transition-name: app-side;
+}
+
+@keyframes app-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes app-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- narrower screens ---------- */
+
+/* the Chat / Analytics tabs exist only where the two are pages */
+.app-pager {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  /* the chat and the analytics are two pages side by side, each the
+     page's width: a swipe snaps from one to the other, and each scrolls
+     on its own inside; the tabs above ride along at the left edge */
+  .app-project,
+  .app-project.is-side-open,
+  .app-project.is-setup,
+  .app-project.is-setup.is-side-open {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .app-project::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* the pages carry the page's padding themselves, so a card's shadow has
+     room before the section clips at the screen's edge */
+  .app-view[data-page="project"] {
+    padding: 0;
+  }
+
+  .app-project__chat,
+  .app-project__rail {
+    grid-row: 2;
+    min-width: 0;
+    padding: var(--spacing-4) max(var(--spacing-8), env(safe-area-inset-right, 0px)) max(var(--spacing-8), env(safe-area-inset-bottom, 0px)) max(var(--spacing-8), env(safe-area-inset-left, 0px));
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .app-project__chat {
+    grid-column: 1;
+  }
+
+  .app-project__rail {
+    grid-column: 2;
+    overflow: visible;
+  }
+
+  /* the cards scroll inside a box a little wider than they are, so their
+     shadows are never cut at its edges, and no gutter is held for a
+     scrollbar (Safari would keep one and the cards would sit off-centre) */
+  .app-rail__cards,
+  .app-rail__cards.is-scrolling {
+    margin: calc(-1 * var(--spacing-4)) calc(-1 * var(--spacing-8)) 0;
+    padding: var(--spacing-4) var(--spacing-8) var(--spacing-8);
+    scrollbar-gutter: auto;
+  }
+
+  .app-pager {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    grid-row: 1;
+    grid-column: 1 / span 2;
+    display: grid;
+    justify-items: center;
+    width: 50%;
+    padding: var(--spacing-8) 0 var(--spacing-4);
+  }
+
+  .app-pager__tabs {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: min(100%, 280px);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-hairline);
+  }
+
+  /* the thumb slides under the page in view */
+  .app-pager__tabs::before {
+    content: "";
+    position: absolute;
+    top: var(--spacing-4);
+    bottom: var(--spacing-4);
+    left: var(--spacing-4);
+    width: calc(50% - var(--spacing-4));
+    border-radius: var(--radius-full);
+    background: var(--color-canvas);
+    translate: calc(var(--pane, 0) * 100%) 0;
+    transition: translate var(--duration-200) var(--ease-standard);
+  }
+
+  .app-pager__tab {
+    position: relative;
+    min-height: var(--target);
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: var(--type-label);
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--duration-150) var(--ease-standard);
+  }
+
+  .app-pager__tab[aria-selected="true"] {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .app-pager__tab:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* the projects rail slides in over the page on the toggle */
+  .app-project__side {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 4;
+    width: 288px;
+    padding: var(--spacing-16);
+    overflow: visible;
+    transform: translateX(-100%);
+    transition: transform var(--duration-300) var(--ease-standard);
+  }
+
+  .is-side-open .app-project__side {
+    transform: translateX(0);
+  }
+
+  .app-side {
+    width: 100%;
+    --rail-bg: var(--color-surface);
+    background: var(--rail-bg);
+    box-shadow: var(--shadow-16);
+  }
+
+  /* off the page while folded, so the chat head carries the opener here */
+  .app-project:not(.is-side-open) .app-chat__open {
+    display: inline-flex;
+  }
+
+  .app-chat {
+    max-width: none;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  /* the page keeps clear of a notch and the home bar; the project page's
+     padding lives in its two pages instead */
+  .app-view {
+    padding: var(--spacing-8) max(var(--spacing-8), env(safe-area-inset-right, 0px)) max(var(--spacing-8), env(safe-area-inset-bottom, 0px)) max(var(--spacing-8), env(safe-area-inset-left, 0px));
+  }
+
+  .app-view[data-page="project"] {
+    padding: 0;
+  }
+
+  /* a finger scrolls with an overlay scrollbar, so no gutter is held for
+     one inside the cards either */
+  .app-log__missions,
+  .app-log__list {
+    scrollbar-gutter: auto;
+  }
+
+  .app-view[data-page="home"],
+  .app-view[data-page="settings"] {
+    overflow-y: auto;
+  }
+
+  /* the plan and question cards take the phone's whole line */
+  .app-plan,
+  .app-ask {
+    max-width: none;
+  }
+
+  .app-home,
+  .app-settings {
+    height: auto;
+  }
+
+  .app-dash {
+    height: auto;
+  }
+
+  .app-dash .c-dash__grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: none !important;
+    height: auto;
+  }
+
+  .c-dash__head {
+    flex-wrap: wrap;
+  }
+
+  /* the search takes what the two buttons leave, down to 320 */
+  .app-search {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  /* no activity log on a phone: the button goes, and the page sends a
+     phone home */
+  .app-home__tools [href="#/activity"] {
+    display: none;
+  }
+
+  .app-settings .c-settings {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .c-settings__nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .c-settings__title {
+    display: none;
+  }
+
+  /* the number tiles sit two across, each one line: label, then the
+     number with its badge beside it */
+  .app-stats,
+  .app-stats--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-8);
+  }
+
+  .app-stats .c-stat,
+  .app-stats--three .c-stat {
+    gap: var(--spacing-2);
+    padding: var(--spacing-10) var(--spacing-12);
+  }
+
+  .app-stats .c-stat__row,
+  .app-stats--three .c-stat__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-6);
+  }
+
+  .app-stats .c-stat__value,
+  .app-stats--three .c-stat__value {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .app-stats .c-stat__delta,
+  .app-stats--three .c-stat__delta {
+    padding: var(--spacing-2) var(--spacing-6);
+  }
+
+  .app-table th:nth-child(2),
+  .app-table td:nth-child(2) {
+    display: none;
+  }
+}
+
+/* ---------- phones and fingers ---------- */
+
+/* reflow: the chat's tracks never grow past the column for one wide line,
+   so nothing scrolls sideways at any width; the home grid the same, so
+   the search box (which never shrinks under min-content) cannot push the
+   header past 320 */
+.app-chat,
+.app-thread,
+.c-turn,
+.app-dash {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-home__tools {
+  min-width: 0;
+}
+
+.app-chat .c-tool > summary {
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+}
+
+.app-chat .c-tool__args,
+.app-chat .c-msg,
+.app-chat .c-think__body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* the scrim under the rail while it rides over the page */
+.app-project__scrim {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .app-project.is-side-open .app-project__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    background: color-mix(in oklab, var(--hex-ink) 32%, transparent);
+  }
+
+  .app-project__side {
+    padding-top: max(var(--spacing-16), env(safe-area-inset-top, 0px));
+    padding-left: max(var(--spacing-16), env(safe-area-inset-left, 0px));
+    padding-bottom: max(var(--spacing-16), env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (pointer: coarse), (max-width: 720px) {
+  /* a tap never flashes the browser's own grey */
+  button,
+  a,
+  summary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* every control reaches the touch floor */
+  .btn {
+    min-height: var(--target);
+  }
+
+  .btn--icon,
+  .app-chat__menu .btn--icon,
+  .app-table .btn--icon {
+    width: var(--target);
+    min-width: var(--target);
+    min-height: var(--target);
+  }
+
+  .c-composer__chip,
+  .c-settings__item,
+  .c-settings__toggle,
+  .c-card__input,
+  .c-think > summary,
+  .c-tool > summary,
+  .c-flow__row-head,
+  .c-chip,
+  .app-search__input,
+  .app-side__search input {
+    min-height: var(--target);
+  }
+
+  /* the chip's remove button reaches the floor without fattening the chip */
+  .c-chip__x {
+    width: var(--target);
+    height: var(--target);
+    margin: calc(-1 * var(--spacing-8)) calc(-1 * var(--spacing-8)) calc(-1 * var(--spacing-8)) 0;
+  }
+
+  /* the lane and filter chips stay compact to the eye; an invisible
+     extension above and below carries the tap area to the floor */
+  .c-insights__filter {
+    position: relative;
+    min-height: 32px;
+    padding-inline: var(--spacing-10);
+  }
+
+  .c-insights__filter::after {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--spacing-6)) 0;
+  }
+
+  .app-log a.c-missions__mark {
+    position: relative;
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-log a.c-missions__mark::after {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--spacing-4));
+    border-radius: inherit;
+  }
+
+  /* the composer row keeps to one line: the two chips give way first */
+  .c-composer__row {
+    gap: var(--spacing-4);
+  }
+
+  .c-composer__row .c-dd {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .c-composer__chip {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 var(--spacing-6) 0 var(--spacing-8);
+  }
+
+  .c-composer__chip > [data-menu-label],
+  .c-composer__chip > [data-mode-label] {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* the chips' menus open across the composer, not off the screen's edge
+     under a chip near the right */
+  .c-composer__row .c-dd {
+    position: static;
+  }
+
+  .c-composer__row .c-dd .c-menu {
+    right: var(--spacing-12);
+    bottom: calc(100% + var(--spacing-8));
+    left: var(--spacing-12);
+    width: auto;
+    min-width: 0;
+    transform-origin: bottom center;
+  }
+
+  /* a field at 16px, or iOS zooms the page into it (the class rules set
+     their font, so this outranks them) */
+  .app :is(input, textarea, select) {
+    font-size: max(16px, 1em);
+  }
+}
+
+@media (max-width: 360px) {
+  .c-composer__chip > [data-mode-label] {
+    display: none;
+  }
+
+  .c-composer__chip.app-mode {
+    min-width: var(--target);
+    justify-content: center;
+  }
+}
+
+/* hover is not an input: what hover reveals shows outright */
+@media (hover: none) {
+  .c-flow__change {
+    opacity: 1;
+  }
+}
+
+/* the settings modal takes the whole phone: the sections as a row across
+   the top, the open one scrolling under it */
+@media (max-width: 720px) {
+  .app-dialog--settings {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .app-dialog--settings .c-settings {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .app-dialog--settings .c-settings__nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    align-content: center;
+    padding-right: 96px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-hairline);
+    scrollbar-width: none;
+  }
+
+  .app-dialog--settings .c-settings__title {
+    display: none;
+  }
+
+  /* the close button sits on the section row's own colour, so a section
+     scrolling under it never shows through */
+  /* the Other amount field sits a touch taller under a finger, still
+     inside its row */
+  .c-settings__pack--other .c-settings__pack-price {
+    height: 36px;
+  }
+
+  /* a phone has no Notifications section */
+  .app-dialog--settings [data-settings-go="notifications"],
+  .app-settings a[href="#/settings/notifications"] {
+    display: none;
+  }
+
+  /* leaving is one labelled button at the top right, on the section row's
+     own colour, never scrolled away */
+  .app-dialog--settings .app-dialog__x,
+  .app-settings .app-settings__x {
+    top: calc(var(--spacing-12) + env(safe-area-inset-top, 0px));
+    right: var(--spacing-8);
+    width: auto;
+    min-width: 0;
+    padding: 0 var(--spacing-12) 0 var(--spacing-10);
+    gap: var(--spacing-6);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    font: var(--type-label);
+    font-weight: 500;
+    box-shadow: -12px 0 10px -4px color-mix(in oklab, var(--color-canvas) 50%, var(--color-surface));
+  }
+
+  .app-dialog--settings .app-dialog__x-label,
+  .app-settings .app-dialog__x-label {
+    display: inline;
+  }
+
+  .app-settings .c-settings__nav {
+    padding-right: 96px;
+  }
+
+  .app-dialog--settings .c-settings__body {
+    padding: var(--spacing-16) var(--spacing-16) max(var(--spacing-24), env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-project,
+  .app-project__side,
+  .app-pager__tabs::before,
+  .app-side,
+  .app-switch__track,
+  .app-switch__track::after,
+  a.c-dash__tile,
+  .app-search {
+    transition: none;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ---------- daemon and files ---------- */
+
+/* the improvement daemon at the top of the activity page: a quiet panel
+   in the page's own column, its lists the tick's said lines and fixes */
+.app-daemon {
+  display: grid;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-12);
+}
+
+.app-daemon__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+/* the pulse: awake and breathing, or gray and still when the daemon is
+   not running */
+.app-daemon__pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--spacing-6);
+  border-radius: var(--radius-full);
+  background: var(--color-status-ok);
+  animation: app-daemon-breathe 2.4s var(--ease-standard) infinite; /* deliberate */
+}
+
+.app-daemon__pulse.is-idle {
+  background: var(--color-hairline-strong);
+  animation: none;
+}
+
+@keyframes app-daemon-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* the coverage line is a read of the codebase, so it speaks in code type */
+.app-daemon__coverage,
+.app-daemon__row,
+.app-files__name,
+.app-files__size,
+.app-fileview__pre,
+.app-fileview__more {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.app-daemon__coverage {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-quaternary);
+  overflow-wrap: anywhere;
+}
+
+/* said reads wider than fixes: what the daemon says runs long, what it
+   files is short; they stack under a narrow window */
+.app-daemon__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--spacing-16);
+}
+
+@media (max-width: 640px) {
+  .app-daemon__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.app-daemon__col {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.app-daemon__label {
+  font: var(--type-meta);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.app-daemon__list {
+  display: grid;
+  align-content: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-daemon__row {
+  padding: var(--spacing-6) 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.app-daemon__row + .app-daemon__row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.app-daemon__none {
+  margin: 0;
+  padding: var(--spacing-6) 0;
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+}
+
+/* the rail's Files card: the workspace the agent writes into, its rows a
+   quiet index of what is there */
+.app-files {
+  display: grid;
+  gap: var(--spacing-8);
+  min-height: 0;
+  padding: var(--spacing-12);
+}
+
+.app-files__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+.app-files__list {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+.app-files__list:hover {
+  scrollbar-color: var(--color-hairline-strong) transparent;
+}
+
+.app-files__list:empty {
+  display: none;
+}
+
+/* a row is a button on the one 36px floor, so the whole line reads as
+   clickable: the name in code type, the size quiet at the right */
+.app-files__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--spacing-6) var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-150) var(--ease-standard);
+}
+
+.app-files__row:hover {
+  background: var(--color-canvas);
+}
+
+.app-files__name {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-files__size {
+  flex: none;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-quaternary);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-files__none {
+  display: grid;
+  gap: 2px;
+  padding: var(--spacing-6) var(--spacing-8) var(--spacing-8);
+}
+
+.app-files__none-title {
+  font: var(--type-meta);
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.app-files__none-sub {
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+}
+
+/* one file open in the app's one dialog: a Reading line until the
+   content lands, then the file in a mono pre that scrolls, capped with a
+   quiet more-lines tail */
+.app-fileview__body {
+  display: grid;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.app-fileview__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) 0;
+  font: var(--type-meta);
+  color: var(--color-text-secondary);
+}
+
+.app-fileview__loading svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.app-fileview__pre {
+  margin: 0;
+  padding: var(--spacing-12);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+  max-height: min(56vh, 520px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-ink);
+  tab-size: 2;
+}
+
+.app-fileview__more {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-quaternary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-daemon__pulse {
+    animation: none;
+  }
+}
+
+/* ---------- subagents card (project rail) ---------- */
+
+/* the card: a launch form over the running/done list */
+.app-subs {
+  display: grid;
+  gap: var(--spacing-10);
+  padding: var(--spacing-12);
+}
+
+.app-subs__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+.app-subs__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  font: var(--type-label);
+  color: var(--color-ink);
+}
+
+.app-subs__title svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.app-subs__count {
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+  white-space: nowrap;
+}
+
+.app-subs__form {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.app-subs__task {
+  resize: vertical;
+  min-height: 44px;
+  font: inherit;
+}
+
+.app-subs__picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-8);
+}
+
+/* the scopes sit two-up so seven families stay a short block */
+.app-subs .app-switches {
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  padding: 0 var(--spacing-8);
+}
+
+.app-subs .app-switch {
+  padding: var(--spacing-6) 0;
+}
+
+.app-subs .app-switch + .app-switch {
+  border-top: 0;
+}
+
+.app-subs__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.app-subs__error {
+  font: var(--type-meta);
+  color: var(--color-status-danger, var(--color-danger, #b3261e));
+}
+
+.app-subs__list {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.app-subs__list:empty {
+  display: none;
+}
+
+.app-subs__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-8);
+  padding: var(--spacing-6) var(--spacing-8);
+  border-radius: var(--radius-8);
+}
+
+.app-subs__item:hover {
+  background: var(--color-canvas);
+}
+
+.app-subs__mark {
+  flex: none;
+  padding-top: 2px;
+  color: var(--color-text-secondary);
+}
+
+.app-subs__mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.app-subs__item.is-done .app-subs__mark {
+  color: var(--color-status-ok);
+}
+
+.app-subs__item.is-failed .app-subs__mark {
+  color: var(--color-status-danger, var(--color-danger, #b3261e));
+}
+
+.app-subs__spin {
+  animation: btn-spin var(--duration-1000) linear infinite;
+}
+
+/* the running worker's thinking line: inline spinner + rotating thought */
+.app-subs__think {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  color: var(--color-fg-muted, var(--color-fg-2, inherit));
+}
+
+.app-subs__thinkspin {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  animation: btn-spin var(--duration-1000) linear infinite;
+}
+
+.app-subs__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-subs__name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-6);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink);
+}
+
+.app-subs__meta {
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-subs__task {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.app-subs__result {
+  padding: var(--spacing-6) var(--spacing-8);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-8);
+  background: var(--color-canvas);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.app-subs__empty {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+}
+
+.app-subs__empty[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-subs__spin {
+    animation: none;
+  }
+}
+
+/* subagent thread card (chat) */
+.app-submsg {
+  display: grid;
+  gap: var(--spacing-6);
+  padding: var(--spacing-10);
+}
+
+.app-submsg__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink);
+}
+
+.app-submsg__head svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.app-submsg__name {
+  font-weight: 600;
+}
+
+.app-submsg__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-left: auto;
+  font: var(--type-meta);
+  color: var(--color-text-quaternary);
+  white-space: nowrap;
+}
+
+.app-submsg__state svg {
+  width: 12px;
+  height: 12px;
+}
+
+.app-submsg.is-done .app-submsg__state {
+  color: var(--color-status-ok);
+}
+
+.app-submsg.is-failed .app-submsg__state {
+  color: var(--color-status-danger, var(--color-danger, #b3261e));
+}
+
+.app-submsg__text {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-submsg .c-tool__spin {
+    animation: none;
+  }
+}
+
+/* agreed: the plan's button itself holds the state - green, no longer a
+   pressable control, and the change hint is gone with it */
+.app-plan__approved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-height: var(--spacing-32);
+  padding: 0 var(--spacing-12);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-status-ok) 14%, var(--color-surface));
+  color: var(--color-status-ok);
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.app-plan__approved svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* a run of tool calls is one quiet, fully readable line - no cards, no
+   underlines - and the prose between bursts carries the story */
+.c-burst {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+.c-burst svg { width: 14px; height: 14px; flex: none; opacity: 0.7; }
+.c-burst__names { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* the agent's voice in the stream: plain prose, no dropdown, no card */
+.c-note {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-6);
+  padding: var(--spacing-3) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-body);
+  line-height: 1.45;
+}
+.c-note .app-turn__when { flex: none; font: var(--type-label); color: var(--color-text-tertiary); }
+
+/* a worker's media: the artifact itself, playable in the thread */
+.c-media { margin: var(--spacing-3) 0; }
+.c-media img, .c-media video { display: block; max-width: 100%; border-radius: 12px; }
+.c-media audio { display: block; width: 100%; max-width: 420px; }
+
+/* a milestone: the one moment that matters, named with its evidence.
+   Video Uploaded links out; a clip or a voiceover just lands */
+.c-milestone {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-5) var(--spacing-6);
+  margin: var(--spacing-3) 0;
+  background: var(--color-panel);
+  border-radius: var(--radius-8);
+}
+/* a connector's record in the thread and the popup over the composer share
+   this frame: mark, title, one button */
+.c-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+.c-action__title {
+  font-weight: 600;
+}
+.c-action__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.c-action__btn:hover { filter: brightness(1.08); }
+
+/* the connect popup docks over the composer input: a quiet hairline card
+   whose one bold element is Connect, and the only ask there is */
+.c-action--pop {
+  gap: var(--spacing-12);
+  margin: 0;
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-8) var(--spacing-12);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-2);
+  animation: action-pop-in var(--duration-200) var(--ease-standard);
+}
+.c-action--pop[hidden] {
+  display: none;
+  animation: none;
+}
+.c-action__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--spacing-24);
+  height: var(--spacing-24);
+}
+.c-action__mark > svg {
+  width: 100%;
+  height: 100%;
+}
+.c-action--pop .c-action__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c-action--pop .c-action__btn {
+  position: relative;
+  min-width: 96px;
+  min-height: var(--spacing-32);
+  justify-content: center;
+  border-radius: var(--radius-8);
+  padding: var(--spacing-6) var(--spacing-12);
+  color: var(--color-on-accent);
+  transition: background-color var(--duration-150) var(--ease-standard), color var(--duration-150) var(--ease-standard), transform var(--duration-100) var(--ease-standard);
+}
+.c-action--pop .c-action__btn:active:not([disabled]) {
+  transform: scale(0.97);
+}
+.c-action--pop .c-action__btn[disabled] {
+  cursor: default;
+  filter: none;
+}
+.c-action--pop[data-phase="verifying"] .c-action__btn {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  color: var(--color-text-secondary);
+}
+.c-action--pop[data-phase="connected"] .c-action__btn {
+  background: color-mix(in srgb, var(--color-status-ok) 14%, var(--color-surface));
+  color: var(--color-status-ok);
+}
+.c-action--pop .c-action__btn > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.c-action--pop .c-action__btn > .c-tool__spin {
+  color: inherit;
+}
+.c-action--pop .c-action__label {
+  animation: action-label-in var(--duration-150) var(--ease-standard);
+}
+.c-action--pop .c-action__check {
+  animation: action-check-in var(--duration-200) var(--ease-standard);
+}
+@keyframes action-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes action-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+@keyframes action-check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (pointer: coarse) {
+  .c-action--pop .c-action__btn {
+    min-height: 44px;
+  }
+}
+@media (max-width: 640px) {
+  .c-action--pop {
+    gap: var(--spacing-8);
+  }
+  .c-action--pop .c-action__btn {
+    min-width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c-action--pop,
+  .c-action--pop .c-action__label,
+  .c-action--pop .c-action__check {
+    animation: none;
+  }
+  .c-action--pop .c-action__btn {
+    transition: none;
+  }
+}
+.c-milestone__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-accent-soft, color-mix(in srgb, var(--color-accent) 14%, transparent));
+  color: var(--color-accent);
+}
+.c-milestone__mark svg { width: 17px; height: 17px; }
+.c-milestone__body { display: grid; gap: 2px; min-width: 0; }
+.c-milestone__title { font: var(--type-label); font-weight: 600; color: var(--color-text-primary); }
+.c-milestone__title a { color: inherit; text-decoration: none; }
+.c-milestone__text { font: var(--type-label); color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-milestone__open { width: 14px; height: 14px; margin-left: auto; flex: none; color: var(--color-text-tertiary); }
+
+/* an occasional screenshot of what the agent was looking at */
+.c-shot { display: grid; gap: var(--spacing-3); margin: var(--spacing-4) 0; }
+.c-shot img {
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius-8);
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-text-primary) 8%, transparent));
+}
+.c-shot figcaption { display: flex; align-items: center; gap: var(--spacing-3); font: var(--type-label); color: var(--color-text-tertiary); }
+.c-shot figcaption svg { width: 13px; height: 13px; }
+
+/* a milestone with something made behind it: the whole card answers, and
+   the dialog plays the clip, the image or the voiceover right in place */
+.c-milestone.is-viewable { cursor: pointer; border-radius: var(--radius-6, 10px); transition: background-color 120ms ease; }
+.c-milestone.is-viewable:hover { background: color-mix(in srgb, var(--color-text-primary) 4%, transparent); }
+.c-milestone.is-viewable:focus-visible { outline: 2px solid var(--color-accent, currentColor); outline-offset: 2px; }
+.app-dialog__media-wrap { display: grid; place-items: center; padding: var(--spacing-4, 12px) 0 var(--spacing-2, 8px); }
+.app-dialog__media { max-width: 100%; border-radius: 8px; }
+video.app-dialog__media { width: min(560px, 100%); max-height: 60vh; background: #000; }
+img.app-dialog__media { max-height: 60vh; object-fit: contain; }
+audio.app-dialog__media { width: min(420px, 100%); }
+
+/* the thinking marker: an unclickable line at the stream's edge while the
+   agent works - the real thoughts attach beneath it as they land */
+.c-thinking {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+  color: var(--color-text-secondary);
+  font: var(--type-label);
+}
+.c-thinking svg { width: 14px; height: 14px; flex: none; }

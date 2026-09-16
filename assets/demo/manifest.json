@@ -1,0 +1,83 @@
+{
+  "project": "infinite-money-glitch demo — AI agent builds a YouTube channel about climbing radio towers",
+  "capturedAt": "2026-09-15",
+  "viewport": { "width": 1280, "height": 800 },
+  "screenshots": [
+    {
+      "file": "yt-search.png",
+      "url": "https://www.youtube.com/results?search_query=radio+tower+climbing",
+      "title": "YouTube search results for \"radio tower climbing\""
+    },
+    {
+      "file": "yt-inspo-1.png",
+      "url": "https://www.youtube.com/@Tallstructureclimbers",
+      "title": "Tallstructureclimbers — YouTube channel home page"
+    },
+    {
+      "file": "yt-inspo-2.png",
+      "url": "https://www.youtube.com/@cross.map7",
+      "title": "cross map — YouTube channel home page"
+    },
+    {
+      "file": "channel-videos.png",
+      "url": "https://www.youtube.com/@Tallstructureclimbers/videos",
+      "title": "Tallstructureclimbers — Videos tab"
+    },
+    {
+      "file": "channel-analytics.png",
+      "url": "https://socialblade.com/youtube/@Tallstructureclimbers",
+      "title": "Tallstructureclimbers's YouTube Statistics — Social Blade"
+    },
+    {
+      "file": "gen-runway.png",
+      "url": "https://runwayml.com",
+      "title": "Runway — Building Real-World Intelligence"
+    },
+    {
+      "file": "gen-kling.png",
+      "url": "https://klingai.com",
+      "title": "KlingAI — All-New KlingAI 3.0 Series"
+    },
+    {
+      "file": "gen-veo.png",
+      "url": "https://deepmind.google/models/veo/",
+      "title": "Veo — Google DeepMind (Our leading video generation model)"
+    },
+    {
+      "file": "voice-eleven.png",
+      "url": "https://elevenlabs.io",
+      "title": "ElevenLabs — Bringing technology to life"
+    }
+  ],
+  "videos": [
+    {
+      "id": "40F8mALRukA",
+      "title": "KDLT-TV 1999ft tower being climbed",
+      "author": "Engineering",
+      "embeddable": true,
+      "thumb": "thumb-1.jpg",
+      "url": "https://www.youtube.com/watch?v=40F8mALRukA"
+    },
+    {
+      "id": "f1BgzIZRfT8",
+      "title": "1500' TV Tower",
+      "author": "Prairie Aerial",
+      "embeddable": true,
+      "thumb": "thumb-2.jpg",
+      "url": "https://www.youtube.com/watch?v=f1BgzIZRfT8"
+    },
+    {
+      "id": "U7-BajfPf4Y",
+      "title": "Climbing World Tallest AM Transmitter",
+      "author": "Tallstructureclimbers",
+      "embeddable": true,
+      "thumb": "thumb-3.jpg",
+      "url": "https://www.youtube.com/watch?v=U7-BajfPf4Y"
+    }
+  ],
+  "voice": {
+    "file": "voice.m4a",
+    "seconds": 13.24,
+    "text": "Eighteen hundred feet up. No elevator, no safety net, just a ladder and the wind. Today we climb the tallest guyed mast in the state, and I'll show you what the view is worth."
+  }
+}

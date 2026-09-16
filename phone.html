@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phone: Infinite money glitch</title>
+  <meta name="color-scheme" content="light">
+  <style>
+    /* phone.html: the app inside a phone, one to one. The frame is the
+       device's screen at its own CSS pixel size; the app gets the part a
+       real browser gives a page (Safari's status strip above, its tab bar
+       below), so what you drive here is what the phone shows. Media queries
+       inside the frame answer to the frame's width, so the phone layout is
+       the one you see. A real finger is still a finger: for (pointer:
+       coarse) and touch, use the browser's device toolbar or a simulator;
+       this page is the 1:1 layout check. */
+    :root {
+      --bg: #e9ebef;
+      --ink: #14171c;
+      --muted: #5f6672;
+      --surface: #fff;
+      --line: #d9dce2;
+      --bezel: #101215;
+      --chrome: #f6f7f9;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 16px 16px;
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 14px / 20px system-ui, -apple-system, "Segoe UI", sans-serif;
+      overflow: auto;
+    }
+    .bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+    .bar__title { margin-right: 8px; font-weight: 600; }
+    .bar__group { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #dfe2e8; }
+    .chip {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .chip[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+    .chip:focus-visible { outline: 2px solid #2f6fed; outline-offset: 2px; }
+    .bar__note { margin-left: auto; color: var(--muted); font-size: 13px; }
+    .bar__note code { font: 12px / 1 ui-monospace, Menlo, monospace; }
+    .stage {
+      display: grid;
+      place-items: start center;
+      min-height: 0;
+      padding-bottom: 24px;
+      overflow: auto;
+    }
+    /* the bezel: a rounded slab, the screen inset in it at the device's own
+       size, a dynamic-island notch on the iPhones */
+    .device {
+      position: relative;
+      padding: 14px;
+      border-radius: 58px;
+      background: var(--bezel);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.28), inset 0 0 0 2px #2a2d33;
+    }
+    .device.is-android { border-radius: 40px; }
+    .device.is-landscape { border-radius: 50px; }
+    /* the screen: the status strip, the page, the browser's bar, side
+       insets in landscape */
+    .device__display {
+      display: grid;
+      grid-template-rows: var(--top) minmax(0, 1fr) var(--bottom);
+      grid-template-columns: var(--side) minmax(0, 1fr) var(--side);
+      width: var(--w);
+      height: var(--h);
+      overflow: hidden;
+      border-radius: 44px;
+      background: var(--chrome);
+    }
+    .device.is-android .device__display { border-radius: 28px; }
+    .device.is-landscape .device__display { border-radius: 38px; }
+    .device__status {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 32px 6px;
+      font: 600 15px / 18px system-ui, -apple-system, sans-serif;
+    }
+    .device.is-android .device__status { padding: 0 24px 4px; font-size: 13px; }
+    .device__screen {
+      grid-row: 2;
+      grid-column: 2;
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+    /* the strip under the page is the home indicator's own room */
+    .device__bar {
+      grid-row: 3;
+      grid-column: 1 / -1;
+    }
+    .device.is-landscape .device__status { display: none; }
+    .device::before {
+      content: "";
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      width: 118px;
+      height: 34px;
+      border-radius: 20px;
+      background: var(--bezel);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .device.no-island::before { display: none; }
+    .device.is-android::before { width: 22px; height: 22px; top: 22px; border-radius: 50%; }
+    .device.is-landscape::before { top: 50%; left: 24px; width: 34px; height: 118px; transform: translateY(-50%); }
+    .device.is-android.is-landscape::before { width: 22px; height: 22px; left: 22px; }
+    .device__home {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      width: 134px;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.75);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .device.no-island .device__home { display: none; }
+    .device.is-landscape .device__home { bottom: 50%; left: auto; right: 22px; width: 5px; height: 134px; transform: translateY(50%); }
+    .fit .device { zoom: var(--fit, 1); }
+  </style>
+</head>
+<body>
+  <div class="bar" role="toolbar" aria-label="Device">
+    <span class="bar__title">Phone</span>
+    <span class="bar__group" role="group" aria-label="Device" data-devices></span>
+    <span class="bar__group" role="group" aria-label="Orientation">
+      <button type="button" class="chip" data-orient="portrait" aria-pressed="true">Portrait</button>
+      <button type="button" class="chip" data-orient="landscape" aria-pressed="false">Landscape</button>
+    </span>
+    <span class="bar__group" role="group" aria-label="Scale">
+      <button type="button" class="chip" data-scale="1" aria-pressed="true">1:1</button>
+      <button type="button" class="chip" data-scale="fit" aria-pressed="false">Fit</button>
+    </span>
+    <span class="bar__note" data-note></span>
+  </div>
+  <div class="stage">
+    <div class="device" data-device>
+      <div class="device__display">
+        <div class="device__status" aria-hidden="true"><span>9:41</span><span>●●● ▲ ▮</span></div>
+        <iframe class="device__screen" id="screen" src="index.html#/" title="Infinite money glitch, on a phone"></iframe>
+        <div class="device__bar" aria-hidden="true"></div>
+      </div>
+      <span class="device__home" aria-hidden="true"></span>
+    </div>
+  </div>
+  <script>
+    // each device: its screen in CSS px, and what the browser leaves a page
+    // with its own bars out of the way (the status strip above, the home
+    // indicator's room below, the island's insets at the sides in landscape)
+    const DEVICES = [
+      { id: "iphone15", label: "iPhone 15", w: 393, h: 852, top: 59, bottom: 34, sideL: 59, topL: 0 },
+      { id: "iphone15max", label: "iPhone 15 Pro Max", w: 430, h: 932, top: 59, bottom: 34, sideL: 59, topL: 0 },
+      { id: "iphonese", label: "iPhone SE", w: 375, h: 667, top: 20, bottom: 0, sideL: 0, topL: 0, island: false },
+      { id: "pixel8", label: "Pixel 8", w: 412, h: 915, top: 24, bottom: 0, sideL: 0, topL: 0, android: true },
+      // the reflow floor: nothing may scroll sideways at 320 CSS px
+      { id: "small", label: "Small 320", w: 320, h: 568, top: 20, bottom: 0, sideL: 0, topL: 0, island: false },
+    ];
+    const params = new URLSearchParams(location.search);
+    let device = DEVICES.find((d) => d.id === params.get("device")) || DEVICES[0];
+    let landscape = params.get("orient") === "landscape";
+    let scale = params.get("scale") === "fit" ? "fit" : "1";
+    const frame = document.querySelector("[data-device]");
+    const display = frame.querySelector(".device__display");
+    const note = document.querySelector("[data-note]");
+
+    function layout() {
+      const w = landscape ? device.h : device.w;
+      const h = landscape ? device.w : device.h;
+      const top = landscape ? device.topL : device.top;
+      const bottom = landscape ? 0 : device.bottom;
+      const side = landscape ? device.sideL : 0;
+      display.style.setProperty("--w", `${w}px`);
+      display.style.setProperty("--h", `${h}px`);
+      display.style.setProperty("--top", `${top}px`);
+      display.style.setProperty("--bottom", `${bottom}px`);
+      display.style.setProperty("--side", `${side}px`);
+      frame.classList.toggle("is-android", Boolean(device.android));
+      frame.classList.toggle("is-landscape", landscape);
+      frame.classList.toggle("no-island", device.island === false);
+      document.body.classList.toggle("fit", scale === "fit");
+      if (scale === "fit") {
+        const room = window.innerHeight - 100;
+        document.body.style.setProperty("--fit", String(Math.min(1, room / (h + 28))));
+      }
+      const pageW = w - side * 2;
+      const pageH = h - top - bottom;
+      note.innerHTML = `${device.label}: the page is ${pageW} × ${pageH} CSS px on a ${w} × ${h} screen${scale === "fit" ? ", scaled to fit" : ", 1:1"}. For touch and <code>(pointer: coarse)</code> use the browser's device toolbar or a simulator.`;
+      for (const b of document.querySelectorAll("[data-device-pick]")) b.setAttribute("aria-pressed", String(b.dataset.devicePick === device.id));
+      for (const b of document.querySelectorAll("[data-orient]")) b.setAttribute("aria-pressed", String((b.dataset.orient === "landscape") === landscape));
+      for (const b of document.querySelectorAll("[data-scale]")) b.setAttribute("aria-pressed", String(b.dataset.scale === scale));
+      const q = new URLSearchParams({ device: device.id, orient: landscape ? "landscape" : "portrait", scale });
+      history.replaceState(null, "", `?${q}`);
+    }
+
+    document.querySelector("[data-devices]").innerHTML = DEVICES.map((d) => `<button type="button" class="chip" data-device-pick="${d.id}" aria-pressed="false">${d.label}</button>`).join("");
+    document.addEventListener("click", (e) => {
+      const pick = e.target.closest("[data-device-pick]");
+      if (pick) device = DEVICES.find((d) => d.id === pick.dataset.devicePick);
+      const orient = e.target.closest("[data-orient]");
+      if (orient) landscape = orient.dataset.orient === "landscape";
+      const sc = e.target.closest("[data-scale]");
+      if (sc) scale = sc.dataset.scale;
+      if (pick || orient || sc) layout();
+    });
+    window.addEventListener("resize", () => scale === "fit" && layout());
+    layout();
+  </script>
+</body>
+</html>

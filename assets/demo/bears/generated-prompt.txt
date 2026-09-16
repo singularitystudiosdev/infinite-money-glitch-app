@@ -1,0 +1,24 @@
+generated.mp4: the clip the first upload opens on, CHOSEN BY THE USER from the provider
+comparison round. It is a MiniMax Hailuo 02 Pro image-to-video run of the short prompt
+"He slips off and falls, then catches the branch by one arm and hangs there." (5.04 s,
+1796x1152 at 24 fps, silent; the frame size follows the start photo's aspect ratio rather
+than 16:9). The user picked it out of twelve candidates generated across six providers
+(Veo 3.1, Sora 2, Hailuo 02 Pro, Seedance v1 Pro, Luma Ray 2, Kling 2.5 Turbo Pro and
+Kling 3 Pro) with the same start frame and the same story.
+
+thumbs/gen-01.jpg is the clip's OWN FIRST FRAME: cropped from 1796x1152 to 16:9 (1796x1010,
+offset 71 px) and scaled to 1376x768, so the card the user clicks and the first thing the
+clip shows are the same picture.
+
+Start frame for every generation: the photograph of the curly-haired climber in a green
+t-shirt high on a granite wall beside a gnarled leafy tree.
+
+Prompt history for this clip: a first round of three Kling 3 Pro storyboards (climb, slip,
+fall, one-hand catch) was judged for realism; a second round of three was staged around the
+arrest and judged frame by frame at 0.25 s, with the winner c3 replacing the clip; the user
+then found the fall too slow with an apparent ledge landing, so the same start frame was run
+through six providers and twelve variants, and this Hailuo run was the user's pick.
+
+Reference candidates kept on disk for the record: qa/13/candidates/ (h1-h5 Hailuo story
+variants, sora2/sora2-short/sora2-s1/sora2-s3/sora2-r1/sora2-r2, veo31, hailuo, seedance,
+kling25).
