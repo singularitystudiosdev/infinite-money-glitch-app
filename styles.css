@@ -87,6 +87,14 @@
      quaternary one: quaternary on canvas measures ~1.9:1, which would trade a
      silent bug for a contrast one. */
   --color-text-quiet: var(--color-text-secondary);
+  /* --color-text-primary and --color-text-tertiary were defined ONLY in
+     demo.css while app.css used them, so every app rule naming them depended
+     on a demo stylesheet being loaded. They live here with the rest of the
+     ladder now. tertiary stays the quietest READABLE tier: at 75% muted over
+     canvas it measured 3.21:1, so text uses take secondary and only icons
+     (the shot chevron, the idle dot) keep tertiary. */
+  --color-text-primary: var(--color-ink);
+  --color-text-tertiary: color-mix(in oklab, var(--hex-muted) 75%, var(--hex-canvas));
   --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 55%, var(--hex-canvas));
   --color-hairline: var(--hex-hairline);
   --color-hairline-strong: color-mix(in oklab, var(--hex-hairline) 60%, var(--hex-muted));
@@ -113,6 +121,8 @@
   --color-ink: var(--hex-canvas);
   --color-text-secondary: color-mix(in oklab, var(--hex-canvas) 60%, var(--hex-muted));
   --color-text-quiet: var(--color-text-secondary);
+  --color-text-primary: var(--color-ink);
+  --color-text-tertiary: color-mix(in oklab, var(--hex-muted) 70%, var(--hex-ink));
   --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 70%, var(--hex-ink));
   --color-hairline: color-mix(in oklab, var(--hex-ink) 76%, var(--hex-surface));
   --color-hairline-strong: color-mix(in oklab, var(--hex-ink) 55%, var(--hex-surface));

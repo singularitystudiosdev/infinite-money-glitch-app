@@ -3759,7 +3759,7 @@ html[data-vt="swap"]::view-transition-new(root) {
   border-radius: var(--radius-8);
   border: 1px solid var(--color-line, color-mix(in srgb, var(--color-text-primary) 8%, transparent));
 }
-.c-shot figcaption { display: flex; align-items: center; gap: var(--spacing-3); font: var(--type-label); color: var(--color-text-tertiary); }
+.c-shot figcaption { display: flex; align-items: center; gap: var(--spacing-3); font: var(--type-label); color: var(--color-text-secondary); }
 .c-shot figcaption svg { width: 13px; height: 13px; }
 
 /* a milestone with something made behind it: the whole card answers, and
