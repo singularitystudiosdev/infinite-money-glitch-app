@@ -3152,7 +3152,11 @@ html[data-vt="swap"]::view-transition-new(root) {
 
 .app-files__none-sub {
   font: var(--type-meta);
-  color: var(--color-text-quaternary);
+  /* --color-text-quaternary is a 2.60:1 mix on canvas: too quiet to carry a
+     sentence the user is meant to read ("Files the agent writes land here").
+     Its own tier stays for decoration; instructional copy takes the
+     secondary slot, which measures 5.07:1. */
+  color: var(--color-text-secondary);
 }
 
 /* one file open in the app's one dialog: a Reading line until the
@@ -3405,7 +3409,9 @@ html[data-vt="swap"]::view-transition-new(root) {
 .app-subs__empty {
   margin: 0;
   font: var(--type-meta);
-  color: var(--color-text-quaternary);
+  /* same reason as .app-files__none-sub: an empty-state sentence is read, not
+     decoration, and the quaternary mix is 2.60:1 on canvas */
+  color: var(--color-text-secondary);
 }
 
 .app-subs__empty[hidden] {
@@ -3626,11 +3632,17 @@ html[data-vt="swap"]::view-transition-new(root) {
 }
 .c-action--pop[data-phase="verifying"] .c-action__btn {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
-  color: var(--color-text-secondary);
+  /* --color-text-secondary on the 12% wash measures 4.40:1, just under the
+     bar; the same 72%-toward-ink recipe the connected state uses clears it */
+  color: color-mix(in oklab, var(--color-text-secondary) 72%, var(--color-ink));
 }
 .c-action--pop[data-phase="connected"] .c-action__btn {
   background: color-mix(in srgb, var(--color-status-ok) 14%, var(--color-surface));
-  color: var(--color-status-ok);
+  /* the full green on its own 14% wash measures 3.74:1 — the same hue as both
+     foreground and tint. The rest of this file already answers that case by
+     taking the green 72% toward ink (the done-mission mark at 1452, the
+     30-day pill at 1844); the connected label uses the same recipe now. */
+  color: color-mix(in oklab, var(--color-status-ok) 72%, var(--color-ink));
 }
 .c-action--pop .c-action__btn > svg {
   width: 14px;
