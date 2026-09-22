@@ -237,5 +237,51 @@
     "file": "voice.m4a",
     "seconds": 14.16,
     "text": "He was raised from a cub, and he still comes back every morning. Eight hundred pounds, and he wants a hug. Today we sit with the man who shares his porch with a grizzly."
-  }
+  },
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:12:49.808Z",
+    "captured": [
+      "yt-search.png",
+      "yt-inspo-1.png",
+      "yt-inspo-2.png",
+      "channel-analytics.png"
+    ],
+    "blocked": [],
+    "skipped": [
+      {
+        "file": "thumbs-contact-sheet.png",
+        "why": "not an http(s) source"
+      }
+    ]
+  },
+  "files": [
+    "channel-analytics.png",
+    "generated.mp4",
+    "thumbs/gen-01.jpg",
+    "thumbs/gen-02.jpg",
+    "thumbs/gen-03.jpg",
+    "thumbs/gen-04.jpg",
+    "thumbs/gen-05.jpg",
+    "thumbs/gen-06.jpg",
+    "thumbs/gen-07.jpg",
+    "thumbs/gen-08.jpg",
+    "thumbs/gen-09.jpg",
+    "thumbs/gen-10.jpg",
+    "thumbs/gen-11.jpg",
+    "thumbs/gen-12.jpg",
+    "thumbs/gen-13.jpg",
+    "thumbs/gen-14.jpg",
+    "thumbs/gen-15.jpg",
+    "thumbs/gen-16.jpg",
+    "thumbs/gen-17.jpg",
+    "thumbs/gen-18.jpg",
+    "thumbs/gen-19.jpg",
+    "thumbs/gen-20.jpg",
+    "thumbs/gen-21.jpg",
+    "voice.m4a",
+    "yt-inspo-1.png",
+    "yt-inspo-2.png",
+    "yt-search.png"
+  ]
 }

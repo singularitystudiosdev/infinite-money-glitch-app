@@ -1,42 +1,54 @@
-// demo/run.js: the scripted run on the demo project (#/p/new-project-hlug).
-// A synthetic user types the request, the agent plans, the user approves,
-// YouTube connects, and the agent works the first video in full: tool
-// calls, notes, the screenshots it took, the voiceover, the upload and the
-// link. The link is opened and closed, two more uploads land, a week of
-// learning plays at five times speed while its numbers run away with it,
-// and the run cuts from the count still climbing straight to the sign-off.
-// The page's own renderers draw every card; this file only decides what
-// lands and when.
-import { YOUTUBE_MARK, icon } from "../icons.js";
+// demo/run.js: THE player. It reads one script module from demo/scripts and
+// plays it on the demo project route (#/p/<id>). A synthetic user types the
+// request, the agent plans, the user approves, the goal's account connects,
+// and the agent works the first artifact in full: tool calls, notes, the
+// screenshots it took, the milestone, the upload and the link. The link is
+// opened and closed, two more artifacts land, a week of learning plays at
+// five times speed while its numbers run away with it, and the run cuts
+// from the count still rising straight to the sign-off.
+//
+// Nothing here knows which goal it is playing. Every word, every tool, every
+// screenshot, every number and every rail tile comes from the script; this
+// file only decides WHAT LANDS AND WHEN. A new goal is a new data file in
+// demo/scripts, never a new branch here.
+// The page's own renderers draw every card.
+import { icon } from "../icons.js";
 import { liveConnected } from "../live.js";
 import { startSim, stopSim } from "../sim.js";
 import { agreePlan, completeSetup, createProject, deleteProject, emit, get, project, pushActivity, renameProject, setPlan, setRailOverride } from "../store.js";
 import { EASE_OUT, escapeHtml, plainText, popIn, reduceMotion, richText } from "../util.js";
-import { milestoneMarkup, msgMarkup, planMarkup, revealText } from "../ui/chat.js";
+import { actionPopMarkup, connectableAction, dayMarkup, milestoneMarkup, msgMarkup, noteMarkup, planMarkup, revealText, shotMarkup, toolCardSettle, toolMarkup, videoMarkup } from "../ui/chat.js";
 import { createPlayer } from "./player.js";
 import { mountRecordButton, unmountRecordButton } from "./record.js";
-import { ACCOUNT, ASSETS, CHANNEL, DEMO_ID, FINAL, FIRST_VIDEO, GENERATED, GENERATION, GENERATION_NOTE, HANDLE, OUTRO, PLAN, QUOTE, RENDER, REQUEST, SHARED, SLOTS, THINKING, TITLE, UPLOAD, VIDEOS, VIEWS_CURVE, VOICE, WEEK, WEEK_TITLES } from "./script.js";
+import { scriptFor } from "./scripts/index.js";
 
-export const matches = (route) => route.page === "project" && route.params.id === DEMO_ID;
+// the script being played. Resolved when the route is prepared, so matches()
+// stays a pure question
+let S = null;
+
+export const matches = (route) => route.page === "project" && Boolean(scriptFor(route.params.id));
 
 let active = null;
 export const isActive = () => active !== null;
 
 // the demo project is made fresh every time the route opens, so the run
 // always starts from an empty chat
-export function prepare() {
-  if (project(DEMO_ID)) deleteProject(DEMO_ID);
-  const p = createProject({ name: "New project", template: "channel" });
+export function prepare(route) {
+  S = scriptFor(route.params.id);
+  if (!S) return;
+  if (project(S.id)) deleteProject(S.id);
+  const p = createProject({ name: "New project", template: S.template });
   const state = get();
   const madeId = p.id;
-  p.id = DEMO_ID;
+  p.id = S.id;
   p.name = "New project";
   p.thoughts = [];
-  state.side.order = [DEMO_ID, ...(state.side.order || []).filter((x) => x !== madeId && x !== DEMO_ID)];
-  emit("projects", { changed: DEMO_ID });
+  state.side.order = [S.id, ...(state.side.order || []).filter((x) => x !== madeId && x !== S.id)];
+  emit("projects", { changed: S.id });
 }
 
 export function start(view) {
+  if (!S) return;
   stop();
   const section = view.querySelector(".app-project");
   if (!section) return;
@@ -67,28 +79,62 @@ export function stop() {
 const easeIn = (t) => t * t * t;
 // the shape a number grows in over the week: a slow, near-straight climb
 // first, then the curve turns up and runs away. Each number has its own
-// lead and its own turn, so the tiles never move in step: views turn
-// first, watch hours and subscribers follow, comments trail them, and
-// revenue is the last to move
+// lead and its own turn, so the tiles never move in step
+// (script.numbers.shapes)
 const shape = (lead, pow) => (u) => lead * u + (1 - lead) * Math.pow(u, pow);
-const SHAPES = { views: shape(0.2, 3.4), watch: shape(0.2, 3.9), subs: shape(0.15, 4.4), comments: shape(0.12, 5), revenue: shape(0.08, 5.6) };
-// the week runs faster as it goes: five times at the start, eight by the
-// last day
-const WEEK_SPEEDS = [5, 5, 5.5, 6, 6.5, 7, 8];
+// a tile's number, read off the project it belongs to
+const READ_TILE = {
+  users: (pr) => pr.users.at(-1),
+  series: (pr) => pr.users.at(-1),
+  views: (pr) => pr.users.at(-1),
+  revenue: (pr) => pr.revenue,
+};
+// anything else is a project stat by that name: a goal's own tile reads its
+// own number, so a shop can measure orders where a publisher measures watch
+const readStat = (key) => READ_TILE[key] || ((pr) => pr.stats?.[key] ?? 0);
+// how a tile is told to roll: the store topic the rail listens on
+const TELL_TILE = {
+  users: (pr) => emit("users", pr),
+  revenue: (pr) => emit("revenue", pr),
+};
+
+// what this demo actually captured. assets/demo/capture.mjs records the files
+// that landed in the demo's manifest; until a demo has been through the
+// capture pass its shots are attempted as before. A file the manifest does
+// not list is never requested, so a half-captured demo does not spray 404s
+// at its own host for screenshots it was never able to take.
+async function capturedFiles() {
+  try {
+    const r = await fetch(`${S.assets}/manifest.json`);
+    if (!r.ok) return null;
+    const m = await r.json();
+    // an empty inventory is an ANSWER ("nothing captured yet"), not a missing
+    // one: a demo whose captures are still owed must request nothing, not
+    // everything
+    return Array.isArray(m.files) ? new Set(m.files) : null;
+  } catch {
+    return null;
+  }
+}
 
 async function play(section, player) {
   const { wait } = player;
-  const p = () => project(DEMO_ID);
+  const p = () => project(S.id);
   const chat = section.querySelector("[data-chat]");
   const thread = chat.querySelector("[data-thread]");
   const form = chat.querySelector("[data-composer]");
   const input = form.querySelector(".c-composer__input");
   const sendBtn = form.querySelector("[data-send]");
   const strip = form.querySelector("[data-status]");
-  const pop = form.querySelector("[data-action-pop]");
+  const pop = chat.querySelector("[data-action-pop]");
   const head = chat.querySelector(".app-chat__head");
   const titleEl = chat.querySelector("[data-chat-title]");
-  const assets = preload();
+  const present = await capturedFiles();
+  const assets = preload(present);
+  const NUM = S.numbers;
+  // each number's own shape, from [lead, pow] in the script
+  const SHAPES = Object.fromEntries(Object.entries(NUM.shapes).map(([k, [lead, pow]]) => [k, shape(lead, pow)]));
+  const SPEEDS = S.speeds;
 
   // ---------- drawing into the thread ----------
 
@@ -143,39 +189,49 @@ async function play(section, player) {
     scrollFoot();
     return msg;
   }
-  const toolIcon = (name) => (name === "youtube" ? YOUTUBE_MARK : icon(name));
   // a tool call: the row lands with a spinner, ticks done, and its result
-  // unfolds under it
+  // unfolds under it (the same card the live path draws, chat.js toolMarkup)
   async function runTool(t, { ms = 1100, result = true } = {}) {
     think(false);
     status(`Running ${t.name}`);
-    const el = append(`<details class="c-tool demo-tool" open><summary><span class="c-tool__icon">${toolIcon(t.icon)}</span><span class="c-tool__call"><span class="c-tool__name">${escapeHtml(t.name)}</span><span class="c-tool__args">${escapeHtml(t.args)}</span></span><span class="c-tool__status">${icon("loader-circle", "c-tool__spin")}</span></summary><pre class="c-tool__result" hidden>${escapeHtml(t.result || "")}</pre></details>`);
+    const el = append(toolMarkup({ ...t, status: "running" }, { demo: true }));
     await wait(ms);
-    el.classList.add("is-done");
-    const st = el.querySelector(".c-tool__status");
-    st.innerHTML = icon("check");
-    popIn(st.querySelector("svg"));
+    toolCardSettle(el, { status: "done", result: result ? t.result : "" });
+    popIn(el.querySelector(".c-tool__status svg"));
     if (result && t.result) {
-      const res = el.querySelector(".c-tool__result");
-      res.hidden = false;
-      rise(res, 4);
+      rise(el.querySelector(".c-tool__result"), 4);
       scrollFoot();
     }
     return el;
   }
-  // a screenshot of what the agent was looking at; a shared one (the
-  // generation and voice sites) lives beside the niche's own folder
-  const shotSrc = (s) => `${s.shared ? SHARED : ASSETS}/${s.file}`;
+  // a screenshot of what the agent was looking at; a shared one (a
+  // generation or voice site) lives beside the goal's own folder
+  const shotSrc = (s) => `${s.shared ? S.shared : S.assets}/${s.file}`;
   async function shot(s, ms = 1000) {
+    if (present && !present.has(s.file)) return;
     if (!(await assets.has(shotSrc(s)))) return;
-    append(`<figure class="c-shot demo-shot"><img src="${shotSrc(s)}" alt="${escapeHtml(s.caption)}" width="1280" height="800"><figcaption>${icon("camera")}<span>${escapeHtml(s.caption)}</span></figcaption></figure>`);
+    append(shotMarkup(s, shotSrc(s), { demo: true }));
     await wait(ms);
   }
-  const note = (text) => append(`<div class="demo-note">${icon("pencil")}<span><strong>Note</strong> ${escapeHtml(text)}</span></div>`);
-  const day = (n, label) => append(`<div class="demo-day"><span>Day ${n}${label ? ` · ${label}` : ""}</span></div>`);
-  const videoCard = (v, title, slot, length) =>
-    append(`<a class="c-milestone is-viewable demo-video" href="${escapeHtml(v.url)}" target="_blank" rel="noopener"><img class="demo-video__thumb" src="${ASSETS}/${v.thumb}" alt="" width="160" height="90"><span class="c-milestone__body"><span class="c-milestone__title">Uploaded: ${escapeHtml(title)}</span><span class="c-milestone__text"><span class="demo-video__mark">${YOUTUBE_MARK}</span>youtube.com/watch?v=${escapeHtml(v.id)} · ${slot} · ${length}</span></span>${icon("arrow-up-right", "c-milestone__open")}</a>`);
-  const log = (kind, text, extra) => pushActivity(DEMO_ID, kind, text, extra);
+  const note = (text) => append(noteMarkup(text, { demo: true }));
+  const day = (n, label) => append(dayMarkup(n, label, { demo: true }));
+  // a published artifact: a card that opens the real thing the agent made. A
+  // thumbnail that is not on disk is dropped rather than drawn: a broken
+  // image is worse than no image
+  async function artifactCard(a, title, slot, length) {
+    const card = S.artifact(a, title, slot, length);
+    if (card.thumb && present && !present.has(a.thumb)) card.thumb = null;
+    if (card.thumb && !(await assets.has(card.thumb))) card.thumb = null;
+    return append(videoMarkup(card, { demo: true }));
+  }
+  function addMilestone() {
+    const m = S.voice.milestone;
+    append(milestoneMarkup({ title: m.title, text: m.text, src: `${S.assets}/${m.src}`, icon: m.icon }));
+    // the player is only drawn when the recording exists: an <audio> with a
+    // src that was never captured is a 404 and an empty control
+    if (!present || present.has(m.src)) append(`<div class="c-media demo-audio"><audio controls preload="metadata" src="${S.assets}/${m.src}"></audio></div>`);
+  }
+  const log = (kind, text, extra) => pushActivity(S.id, kind, text, extra);
 
   // ---------- the numbers ----------
 
@@ -185,29 +241,34 @@ async function play(section, player) {
     const pr = p();
     const kv = SHAPES.views(u);
     const kr = SHAPES.revenue(u);
-    pr.users = VIEWS_CURVE.map((v) => Math.round(v * kv));
+    pr.users = NUM.curve.map((v) => Math.round(v * kv));
     // the 30-day comparison behind the badge: a fraction of each day that
     // shrinks as the week goes on, so the badge climbs with the curve
     pr.history = Array.from({ length: 30 }, (_, i) => {
       const v = pr.users[i] ?? pr.users.at(-1);
       return v ? Math.max(1, Math.round(v / (1.4 + 4 * kv))) : 0;
     });
-    pr.stats.subs = Math.round(FINAL.subs * SHAPES.subs(u));
-    pr.stats.comments = Math.round(FINAL.comments * SHAPES.comments(u));
-    pr.stats.watch = Math.round(FINAL.watch * SHAPES.watch(u));
-    pr.revenue = Math.round(FINAL.revenue * kr);
+    // every stat the script names is carried by its own shape toward its own
+    // closing number, so a goal can measure orders or conversions as
+    // naturally as a publisher measures watch time
+    const stats = NUM.stats || NUM.final;
+    for (const [key, value] of Object.entries(stats)) {
+      if (key === "revenue" || key === "users") continue;
+      const sh = SHAPES[key] || SHAPES.views;
+      pr.stats[key] = Math.round(value * sh(u));
+    }
+    pr.revenue = Math.round(NUM.final.revenue * kr);
     pr.baseline = pr.revenue ? Math.max(1, Math.round(pr.revenue / (1 + 2.6 * kr))) : 0;
   }
   // each card is told to roll only when its own number moved, and no more
   // often than its own beat, so the rail ticks over tile by tile rather
-  // than all at once
-  const TILES = [
-    { id: "series", every: 260, read: (pr) => pr.users.at(-1), tell: (pr) => emit("users", pr) },
-    { id: "subs", every: 200, read: (pr) => pr.stats.subs, tell: (pr) => emit("stats", { project: pr, tile: "subs" }) },
-    { id: "watch", every: 340, read: (pr) => pr.stats.watch, tell: (pr) => emit("stats", { project: pr, tile: "watch" }) },
-    { id: "comments", every: 390, read: (pr) => pr.stats.comments, tell: (pr) => emit("stats", { project: pr, tile: "comments" }) },
-    { id: "revenue", every: 430, read: (pr) => pr.revenue, tell: (pr) => emit("revenue", pr) },
-  ];
+  // than all at once (script.numbers.tiles)
+  const TILES = NUM.tiles.map((t) => ({
+    id: t.id,
+    every: t.every,
+    read: readStat(t.read || t.id),
+    tell: t.tell === "stats" ? (pr) => emit("stats", { project: pr, tile: t.id }) : TELL_TILE[t.tell] || TELL_TILE.users,
+  }));
   const shown = {};
   const toldAt = {};
   function pulse(force = false) {
@@ -266,10 +327,12 @@ async function play(section, player) {
   // the count passing a round number is worth a line in the log
   let crossed = 0;
   function logCrossings() {
-    const thousands = Math.floor(p().stats.subs / 2000) * 2;
+    const c = NUM.crossing;
+    const read = readStat(c.read);
+    const thousands = Math.floor(read(p()) / c.step) * (c.step / 1000);
     if (thousands <= crossed) return;
     crossed = thousands;
-    log("subscriber", `Subscribers crossed ${thousands}k`);
+    log(c.kind, c.text(thousands));
   }
 
   // ---------- scene 0: the brand green, the box, and one line ----------
@@ -281,7 +344,7 @@ async function play(section, player) {
   document.body.classList.add("is-demo-intro");
   const quote = document.createElement("div");
   quote.className = "demo-quote";
-  quote.innerHTML = `<p class="demo-quote__text">${escapeHtml(QUOTE.text)}</p><p class="demo-quote__by">${escapeHtml(QUOTE.by)}</p>`;
+  quote.innerHTML = `<p class="demo-quote__text">${escapeHtml(S.quote.text)}</p><p class="demo-quote__by">${escapeHtml(S.quote.by)}</p>`;
   chat.append(quote);
   // the display face is fetched from the web: the line waits for it (a
   // moment at most) so it never swaps typeface as it appears
@@ -306,7 +369,7 @@ async function play(section, player) {
   input.focus({ preventScroll: true });
   await wait(250);
   // a quick typist: about 90 words a minute, a touch slower on the spaces
-  for (const ch of REQUEST) {
+  for (const ch of S.request) {
     input.value += ch;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     await wait(11 + Math.random() * 17 + (ch === " " ? 11 : 0));
@@ -317,8 +380,8 @@ async function play(section, player) {
   input.value = "";
   input.dispatchEvent(new Event("input", { bubbles: true }));
   input.blur();
-  append(msgMarkup("user", REQUEST));
-  log("user", `You: ${REQUEST}`);
+  append(msgMarkup("user", S.request));
+  log("user", `You: ${S.request}`);
   player.hideCursor();
   // the rest of the app comes up around the conversation
   section.classList.remove("is-demo-intro");
@@ -332,21 +395,21 @@ async function play(section, player) {
   think(true);
   status("Thinking", "");
   await wait(230);
-  renameProject(DEMO_ID, TITLE);
-  titleEl.textContent = TITLE;
-  document.title = TITLE;
+  renameProject(S.id, S.title);
+  titleEl.textContent = S.title;
+  document.title = S.title;
   rise(titleEl, 4);
-  for (const line of THINKING.request) {
+  for (const line of S.thinking.request) {
     status(line);
     await wait(500);
   }
-  await say(`Here is the plan for ${TITLE}. It opens the channel under your own Google sign-in, keeps three uploads a day, and tests its way to what the audience watches. Change anything, or approve it and I start.`);
-  setPlan(DEMO_ID, PLAN);
+  await say(S.planSay(S.title));
+  setPlan(S.id, S.plan);
   const plan = append(planMarkup(p()));
-  status("Waiting on the plan");
+  status(S.status.waiting);
   await wait(1770);
   await player.click(plan.querySelector("[data-plan-agree]"));
-  agreePlan(DEMO_ID);
+  agreePlan(S.id);
   const agreed = thread.querySelector("[data-plan-card]");
   if (agreed && !reduceMotion()) agreed.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 300, easing: EASE_OUT });
   await wait(300);
@@ -354,28 +417,31 @@ async function play(section, player) {
   player.hideCursor();
   await wait(600);
 
-  // ---------- scene 3: the channel, under the user's sign-in ----------
+  // ---------- scene 3: the account, under the user's sign-in ----------
 
+  const C = S.connect;
   think(true);
-  status("Opening the channel");
+  status(C.statusOpening);
   await wait(900);
-  await say("Great, that is the plan. One thing from you: sign in to YouTube once with your Google account and I open the channel under it. I keep the token, never the password.");
-  pop.innerHTML = `<span class="c-action__mark">${YOUTUBE_MARK}</span><span class="c-action__title">Connect YouTube Account</span><button type="button" class="c-action__btn" data-demo-connect><span class="c-action__label">Connect</span></button>`;
+  await say(C.say);
+  // the popup is the live popup's own renderer over an action item: the demo
+  // does not hand-write this markup, which is how the two would drift
+  pop.innerHTML = actionPopMarkup(connectableAction({ id: `${S.id}-connect`, kind: "action", probe: C.probe, platform: C.platform, mark: C.mark, auth: C.auth, title: C.title, url: C.url }));
   pop.dataset.phase = "connect";
   pop.hidden = false;
   // the popup makes the composer taller: the last line stays in view
   requestAnimationFrame(follow);
   await wait(1100);
-  const connect = pop.querySelector("[data-demo-connect]");
+  const connect = pop.querySelector("[data-action-connect]");
   await player.click(connect);
   pop.dataset.phase = "verifying";
   connect.disabled = true;
   connect.innerHTML = `${icon("loader-circle", "c-tool__spin")}<span class="c-action__label">Verifying</span>`;
-  status("Waiting on Google sign-in");
+  status(C.statusWaiting);
   await wait(1700);
   pop.dataset.phase = "connected";
   connect.innerHTML = `${icon("check", "c-action__check")}<span class="c-action__label">Connected</span>`;
-  log("setup", `YouTube connected as ${ACCOUNT}`);
+  log("setup", C.log(S.account));
   await wait(1300);
   if (!reduceMotion()) await pop.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(4px)" }], { duration: 180, easing: EASE_OUT }).finished;
   pop.hidden = true;
@@ -385,36 +451,33 @@ async function play(section, player) {
   // own "all set" line is skipped (the marker below is what it looks for)
   setRailOverride("classic");
   const pr = p();
-  pr.setup.done = ["youtube", "card", "stripe"];
-  pr.setup.summary = { youtube: `Channel ${CHANNEL}, ${ACCOUNT}`, card: "Visa ending 4242", stripe: "Stripe, connected" };
+  const SET = S.setup;
+  pr.setup.done = [...SET.done];
+  pr.setup.summary = { ...SET.summary };
   pr.thread.push({ kind: "thought", text: "", setupDone: true, at: Date.now() });
-  completeSetup(DEMO_ID);
-  // the rail's missions are this run's own: three pieces of climb-video work
-  // in the order they happen, and none of them ever leaves the card, so no
-  // pooled task can land in the middle of the story
-  pr.missions = [
-    { id: "demo-first-video", title: "First video: the hold breaks", site: "YouTube Studio", url: "https://studio.youtube.com", icon: "clapperboard", progress: 38, steps: ["Writing the script from the wall footage", "Generating the crag scene in three models", "Recording the voiceover", "Rendering and uploading the 06:00 video"] },
-    { id: "demo-thumbs", title: "Thumbnail tests on the fall footage", site: "YouTube Studio", url: "https://studio.youtube.com", icon: "image", progress: 16, steps: ["Pulling three frames from the crag clip", "Cutting the caught fall into the corner", "Scoring each against the last upload", "Switching the queue to the winner"] },
-    { id: "demo-schedule", title: "Three uploads a day, on the hour", site: "YouTube Studio", url: "https://studio.youtube.com", icon: "calendar-clock", progress: 0, steps: ["Reading the first video's watch time by hour", "Placing the 06:00, 12:00 and 18:00 slots", "Writing the descriptions and tags", "Scheduling tomorrow's three"] },
-  ].map((m) => ({ ...m, lane: "manager" }));
-  // three running is all there is: neither lane is ever topped back up
+  completeSetup(S.id);
+  // the rail's missions are this run's own, in the order they happen, and
+  // none of them ever leaves the card, so no pooled task can land in the
+  // middle of the story
+  pr.missions = SET.missions.map((m) => ({ ...m, lane: "manager" }));
+  // running count is all there is: neither lane is ever topped back up
   pr.laneCount = { manager: pr.missions.length, subagent: 0 };
   for (const m of pr.missions) emit("mission:new", { project: pr, mission: m });
   setProgress(0);
   await wait(500);
-  status("Setting up the channel");
+  status(SET.status);
   await wait(600);
-  await runTool({ name: "create_channel", icon: "youtube", args: `name: "${CHANNEL}", handle: ${HANDLE}, account: ${ACCOUNT}`, result: `created\nhandle: ${HANDLE}\nart: uploaded, 3 variants kept` }, { ms: 1300 });
-  log("setup", `Channel created: ${CHANNEL} (${HANDLE})`);
-  await say(`Channel open: **${CHANNEL}**, ${HANDLE}, under ${ACCOUNT}. The numbers and the log are on the right. Uploads go out at ${SLOTS.join(", ")}; starting on the first one.`);
+  await runTool(SET.tool, { ms: 1300 });
+  log("setup", SET.log(SET));
+  await say(SET.line(SET));
 
-  // ---------- scene 4: the first video, in full ----------
+  // ---------- scene 4: the first artifact, in full ----------
 
   think(true);
-  status(THINKING.first[0]);
+  status(S.workStatus[0]);
   await wait(1300);
-  for (const [i, step] of FIRST_VIDEO.entries()) {
-    if (THINKING.first[i]) status(THINKING.first[i]);
+  for (const [i, step] of S.work.entries()) {
+    if (S.workStatus[i]) status(S.workStatus[i]);
     await runTool(step.tool);
     if (step.shot) await shot(step.shot);
     if (step.note) {
@@ -422,44 +485,48 @@ async function play(section, player) {
       await wait(900);
     }
   }
-  log("work", "Read the two inspiration channels and wrote script 1");
-  await say("Script is 138 words and opens on the climber reaching for the hold. Generating the crag scene in three models to see which one looks real, then the voice.");
-  status(THINKING.first[3]);
-  for (const g of GENERATION) {
+  log("work", S.workLog);
+  await say(S.workSay);
+  status(S.workStatus[3]);
+  for (const g of S.media) {
     await runTool(g.tool, { ms: 1400 });
     if (g.shot) await shot(g.shot, 900);
   }
-  note(GENERATION_NOTE);
-  log("insight", "Veo 3 keeps the hands and the rock right; Kling lets the feet drift", { delta: 19 });
-  pushMissions(22);
+  note(S.mediaNote);
+  log(S.mediaInsight.kind, S.mediaInsight.text, { delta: S.mediaInsight.delta });
+  pushMissions(SET.steps.first);
   await wait(1000);
-  status(THINKING.first[4]);
-  await runTool(VOICE.tool, { ms: 1500 });
-  await shot(VOICE.shot, 800);
-  const voice = append(milestoneMarkup({ title: VOICE.milestone.title, text: VOICE.milestone.text, src: `${ASSETS}/${VOICE.milestone.src}`, icon: "mic" }));
-  voice.insertAdjacentHTML("beforeend", `<span class="demo-wave" aria-hidden="true">${"<i></i>".repeat(18)}</span>`);
-  append(`<div class="c-media demo-audio"><audio controls preload="metadata" src="${ASSETS}/${VOICE.milestone.src}"></audio></div>`);
-  log("work", "Voiceover recorded, 14 s");
+  status(S.workStatus[4]);
+  await runTool(S.voice.tool, { ms: 1500 });
+  await shot(S.voice.shot, 800);
+  // the milestone's own renderer draws the level wave for an audio artifact
+  // (chat.js waveMarkup), so the demo card and the live card are the same
+  // markup
+  addMilestone();
+  log("work", S.voiceLog);
   await wait(1600);
-  status(THINKING.first[5]);
-  await runTool(RENDER, { ms: 1600 });
-  const first = VIDEOS[0];
-  const firstTitle = WEEK_TITLES[0];
-  await runTool(UPLOAD(firstTitle), { ms: 1500 });
-  const card1 = videoCard(first, firstTitle, SLOTS[0], "3:04");
-  log("video", `Uploaded: ${firstTitle}, 3:04`);
-  pushMissions(30);
-  await say(`It is live: [${firstTitle}](${first.url}), scheduled for ${SLOTS[0]}. The 12:00 and 18:00 videos are already in the queue.`);
-  status("Cutting the 12:00 short");
+  status(S.workStatus[5]);
+  await runTool(S.render, { ms: 1600 });
+  const first = S.videos[0];
+  const firstTitle = S.titles[0];
+  await runTool(S.upload(firstTitle, S.slots[0]), { ms: 1500 });
+  const card1 = await artifactCard(first, firstTitle, S.slots[0], S.firstLength);
+  log(S.logs.upload, `Uploaded: ${firstTitle}, ${S.firstLength}`);
+  pushMissions(SET.steps.upload);
+  await say(S.liveSay(firstTitle, first.url, S.slots[0]));
+  status(S.status.cutting);
 
   // ---------- scene 5: the link, opened and closed ----------
 
   await wait(900);
   await player.click(card1);
   // the page is the generated clip when it is on disk, the real embed if not
-  const generated = `${ASSETS}/${GENERATED.file}`;
-  const hasClip = await fetch(generated, { method: "HEAD" }).then((r) => r.ok).catch(() => false);
-  const back = await player.openBrowser({ url: first.url, video: hasClip ? generated : null, embed: `https://www.youtube-nocookie.com/embed/${first.id}?autoplay=1&mute=1&rel=0&modestbranding=1` });
+  const generated = `${S.assets}/${S.generated.file}`;
+  // the manifest already says whether this clip is on disk: asking with a HEAD
+  // is a request for a file that is not there, which is what the "0 failed
+  // requests" gate counts
+  const hasClip = present && !present.has(S.generated.file) ? false : await fetch(generated, { method: "HEAD" }).then((r) => r.ok).catch(() => false);
+  const back = await player.openBrowser({ url: first.url, video: hasClip ? generated : null, embed: S.embedUrl ? S.embedUrl(first.id) : first.url });
   // the user comes back 0.1 s before the clip ends, never after it: the
   // pointer glides to the back button as the clip nears its end (the glide
   // takes about 0.65 s), the press goes down 0.18 s before the leaving
@@ -484,86 +551,84 @@ async function play(section, player) {
   player.hideCursor();
   await wait(500);
 
-  // ---------- scene 6: the second and third uploads ----------
+  // ---------- scene 6: the second and third artifacts ----------
 
   player.setSpeed(1.6);
   // from here the numbers move on their own clock
   startNumbers();
-  for (const [i, v] of [VIDEOS[1], VIDEOS[2]].entries()) {
-    const title = WEEK_TITLES[i + 1];
-    const slot = SLOTS[i + 1];
-    status(`Working on the ${slot} upload`);
+  for (const more of S.more) {
+    status(S.moreStatus(more.slot));
     think(true);
     await wait(900);
-    await runTool({ name: "generate_video", icon: "clapperboard", args: `model: ${i === 0 ? "Veo 3" : "Runway Gen-4"}, scenes: ${i === 0 ? 1 : 3}`, result: i === 0 ? "done in 36 s" : "done in 1:52" }, { ms: 1300 });
-    await runTool({ name: "generate_voice", icon: "mic", args: `${i === 0 ? "38" : "155"} words`, result: `${i === 0 ? "9.1" : "41"} s` }, { ms: 900, result: false });
-    await runTool(UPLOAD(title, slot), { ms: 1200 });
-    videoCard(v, title, slot, i === 0 ? "0:45" : "4:12");
-    log("video", `Uploaded: ${title}`);
-    moveNumbers(0.04 + i * 0.04, 2400);
-    pushMissions(18);
+    await runTool(more.gen, { ms: 1300 });
+    await runTool(more.voice, { ms: 900, result: false });
+    await runTool(S.upload(more.title, more.slot), { ms: 1200 });
+    await artifactCard(more.video, more.title, more.slot, more.length);
+    log(S.logs.upload, `Uploaded: ${more.title}`);
+    moveNumbers(more.numbers, 2400);
+    pushMissions(SET.steps.more);
     await wait(700);
   }
-  await say("Three up on day one. From here I run the tests: length, model and thumbnail, two arms at a time, and switch the queue to whatever wins.");
+  await say(S.weekIntro);
   await wait(1200);
 
   // ---------- scene 7: a week at five times speed, then faster ----------
 
   const speedLabel = (s) => `${s.toLocaleString("en-US", { maximumFractionDigits: 1 })}× speed`;
-  head.insertAdjacentHTML("beforeend", `<span class="demo-speed" data-demo-speed>${icon("fast-forward")}<span data-demo-speed-label>${speedLabel(WEEK_SPEEDS[0])}</span></span>`);
+  head.insertAdjacentHTML("beforeend", `<span class="demo-speed" data-demo-speed>${icon("fast-forward")}<span data-demo-speed-label>${speedLabel(SPEEDS[0])}</span></span>`);
   const badge = head.querySelector("[data-demo-speed]");
   popIn(badge);
-  player.setSpeed(WEEK_SPEEDS[0]);
+  player.setSpeed(SPEEDS[0]);
   let uploads = 3;
   let titleIndex = 3;
   // one day's beats, in the run's own milliseconds, before the speed
   // divides them: the numbers are given the same stretch to move in
-  const DAY_MS = 900 + 2 * 1000 + 1100 + SLOTS.length * (700 + 500) + 700;
-  for (const [n, d] of WEEK.entries()) {
+  const DAY_MS = 900 + 2 * 1000 + 1100 + S.slots.length * (700 + 500) + 700;
+  for (const [n, d] of S.week.entries()) {
     // the week picks up as it goes; the badge says so
-    if (WEEK_SPEEDS[n] !== player.getSpeed()) {
-      player.setSpeed(WEEK_SPEEDS[n]);
+    if (SPEEDS[n] !== player.getSpeed()) {
+      player.setSpeed(SPEEDS[n]);
       const label = badge.querySelector("[data-demo-speed-label]");
-      label.textContent = speedLabel(WEEK_SPEEDS[n]);
+      label.textContent = speedLabel(SPEEDS[n]);
       rise(label, 3);
     }
     // where the numbers stand by the end of this day: barely moved over
     // the first days, then the curve turns up and the last of them run away
     const subsBefore = p().stats.subs;
-    moveNumbers(0.1 + 0.8 * easeIn((n + 1) / WEEK.length), DAY_MS / player.getSpeed());
+    moveNumbers(0.1 + 0.8 * easeIn((n + 1) / S.week.length), DAY_MS / player.getSpeed());
     day(d.day);
-    status(`Day ${d.day}: reading yesterday's numbers`);
+    status(S.weekStatus(d.day, "reading yesterday's numbers"));
     await wait(900);
     for (const t of d.tools) await runTool(t, { ms: 1000 });
     note(d.note);
     log("insight", d.note.split(". ")[0], { delta: 12 + n * 9 });
     await wait(1100);
-    for (const [k, slot] of SLOTS.entries()) {
-      const v = VIDEOS[(uploads + k) % VIDEOS.length];
-      const title = WEEK_TITLES[titleIndex % WEEK_TITLES.length];
+    for (const [k, slot] of S.slots.entries()) {
+      const v = S.videos[(uploads + k) % S.videos.length];
+      const title = S.titles[titleIndex % S.titles.length];
       titleIndex += 1;
-      status(`Day ${d.day}: the ${slot} upload`);
-      await runTool(UPLOAD(title, slot), { ms: 700, result: false });
-      videoCard(v, title, slot, k === 1 ? "0:45" : k === 0 ? "3:10" : "6:48");
-      log("video", `Uploaded: ${title}`);
+      status(S.weekStatus(d.day, `the ${slot} upload`));
+      await runTool(S.upload(title, slot), { ms: 700, result: false });
+      await artifactCard(v, title, slot, S.weekUploadLengths[k]);
+      log(S.logs.upload, `Uploaded: ${title}`);
       await wait(500);
     }
     uploads += 3;
     // the log reads the tiles' own numbers, so the two never disagree
     const gained = p().stats.subs - subsBefore;
-    if (gained > 0) log("subscriber", `${gained.toLocaleString("en-US")} new subscribers today`);
-    log("view", `Day ${d.day}: ${p().users.at(-1).toLocaleString("en-US")} views so far`);
-    pushMissions(26);
+    if (gained > 0) log(S.logs.delta, NUM.gainedLine(gained.toLocaleString("en-US")));
+    log(S.logs.day, NUM.dayLine(d.day, p().users.at(-1).toLocaleString("en-US")));
+    pushMissions(SET.steps.week);
     await wait(700);
   }
 
   // ---------- scene 8: the numbers, and the cut ----------
 
-  // no zoom and no report line: the week left the count climbing, it keeps
-  // climbing here in real time, and the sign-off lands on top of it while
+  // no zoom and no report line: the week left the count rising, it keeps
+  // rising here in real time, and the sign-off lands on top of it while
   // the tiles are still rolling — the run cuts from numbers actively
   // running up straight to the outro
-  status("Reading the week's numbers");
+  status(S.status.readingWeek);
   player.setSpeed(1);
   // the last stretch of the curve is the steepest: the tiles are running
   // hardest as the page cuts away
@@ -578,7 +643,7 @@ async function play(section, player) {
   // name fades up under it
   const outro = document.createElement("div");
   outro.className = "demo-outro";
-  outro.innerHTML = `<img class="demo-outro__logo" src="${SHARED}/${OUTRO.logo}" alt="" width="512" height="512"><span class="demo-outro__name">${escapeHtml(OUTRO.name)}</span><button type="button" class="demo-outro__replay" data-demo-replay>${icon("rotate-ccw")}<span>Replay</span></button>`;
+  outro.innerHTML = `<img class="demo-outro__logo" src="${S.shared}/${S.outro.logo}" alt="" width="512" height="512"><span class="demo-outro__name">${escapeHtml(S.outro.name)}</span><button type="button" class="demo-outro__replay" data-demo-replay>${icon("rotate-ccw")}<span>Replay</span></button>`;
   document.body.append(outro);
   outro.querySelector("[data-demo-replay]").addEventListener("click", () => location.reload());
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -593,7 +658,7 @@ async function play(section, player) {
 
 // the images the run shows, fetched while the request is still being
 // typed; a screenshot that is not on disk is skipped rather than broken
-function preload() {
+function preload(present = null) {
   const loads = new Map();
   // src is the whole path from the page root
   const has = (src) => {
@@ -610,7 +675,8 @@ function preload() {
     }
     return loads.get(src);
   };
-  for (const s of [...FIRST_VIDEO, ...GENERATION, VOICE]) if (s.shot) has(`${s.shot.shared ? SHARED : ASSETS}/${s.shot.file}`);
-  for (const v of VIDEOS) has(`${ASSETS}/${v.thumb}`);
+  const full = (s) => `${s.shared ? S.shared : S.assets}/${s.file}`;
+  for (const s of [...S.work, ...S.media, S.voice]) if (s.shot && (!present || present.has(s.shot.file))) has(full(s.shot));
+  for (const v of S.videos) if (!present || present.has(v.thumb)) has(`${S.assets}/${v.thumb}`);
   return { has };
 }

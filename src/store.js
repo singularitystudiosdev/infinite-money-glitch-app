@@ -42,7 +42,19 @@ export function subscribe(fn) {
 // emits more often than that, so a debounce that restarted on every emit
 // could hold a save back for seconds
 export function emit(topic, payload) {
-  for (const fn of listeners) fn(topic, payload);
+  // ONE listener that throws must not starve the rest. This loop had no guard,
+  // so a subscriber that faulted on one payload stopped every subscriber after
+  // it from ever hearing that event again: the activity card froze with rows
+  // in the store, and the only symptom was a card that would not repaint. The
+  // iteration is over a copy too, so a listener may subscribe or unsubscribe
+  // while it runs. A throw is reported, never swallowed.
+  for (const fn of [...listeners]) {
+    try {
+      fn(topic, payload);
+    } catch (err) {
+      console.error(`store: a listener for "${topic}" threw`, err);
+    }
+  }
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
@@ -333,11 +345,16 @@ export const project = (id) => state.projects.find((p) => p.id === id);
 export const setupSteps = ["youtube", "card", "stripe"];
 export const isRunning = (p) => Boolean(p.setup.complete);
 // connectors still to be solved: actions the verifier can check that nobody
-// has connected yet. Dismissing the popup hides it; the count stays until done
-// the probes the composer can actually dock a popup for: the rail's badge
-// reads this, so a count can never appear without its prompt behind it
-export const CONNECTABLE_PROBES = new Set(["stripe_connect", "youtube_session"]);
-export const connectorsPending = (p) => (p.thread || []).filter((t) => t.kind === "action" && !t.done && t.probe && (t.url || CONNECTABLE_PROBES.has(t.probe))).length;
+// has connected yet. Dismissing the popup hides it; the count stays until done.
+// An action is docked by the server with its own probe, consent route and auth
+// tier, and the popup renders all three, so "the popup can answer this" is a
+// property of the item itself — never a list of probe ids this build happens to
+// know. A connector the catalog gains tomorrow counts the moment it docks.
+export const connectable = (t) => {
+  const tier = t.auth || t.tier || null;
+  return t.kind === "action" && !t.done && Boolean(t.probe) && Boolean(tier) && tier !== "card";
+};
+export const connectorsPending = (p) => (p.thread || []).filter(connectable).length;
 // paused: YOU paused it and it holds between steps until you resume; the
 // agent never pauses itself. Active is running and not paused
 export const isPaused = (p) => Boolean(p.paused);
@@ -484,7 +501,25 @@ export function setBusy(id, who) {
 // what it found, what it sold, what it asked
 export function pushActivity(id, kind, text, extra = {}) {
   const p = project(id);
-  if (!p) return null;
+  // a live row for a project this page does not hold is a defect, not a
+  // no-op: swallowing it silently is how an activity card stays empty while
+  // the server keeps saying things
+  if (!p) {
+    console.error(`pushActivity: no project "${id}" in the store for a "${kind}" row: ${String(text).slice(0, 120)}`);
+    return null;
+  }
+  // one row per server entry: a live row that arrives again (a reconnect
+  // replay, a duplicate emit) is the SAME row, not a second one. It MUST still
+  // emit, though. The server writes the row and then sends the activity event,
+  // so a throttled project_upsert carrying that row frequently arrives FIRST;
+  // returning early here left the row in the array and the activity card never
+  // repainted, which is a card that shows 0 rows while the store holds five.
+  const existing = extra.id ? p.activity.find((a) => a.id === extra.id) : null;
+  if (existing) {
+    Object.assign(existing, { kind, text, ...extra });
+    emit("activity", { id, item: existing });
+    return existing;
+  }
   const item = { id: uid(), kind, text, at: Date.now(), ...extra };
   p.activity.unshift(item);
   while (p.activity.length > 80) p.activity.pop();
@@ -769,5 +804,34 @@ export function setNotify(kind, value) {
 
 export function setCard(card) {
   state.billing.card = card;
+  emit("billing");
+}
+
+// setBillingRemote(billing): the server's own money state, on every `account`
+// event and on every /api/billing read (P11). The live backend owns the balance,
+// the plan, the caps, the top-up preference and the card; the client renders
+// what it is given and never invents a number of its own.
+export function setBillingRemote(billing) {
+  if (!billing || typeof billing !== "object") return;
+  const c = state.credits;
+  if (typeof billing.topUp === "boolean" && c.topUp !== billing.topUp) {
+    c.topUp = billing.topUp;
+    emit("credits:topup");
+  }
+  if (billing.topUpPack) c.pack = billing.topUpPack;
+  state.billing.plan = billing.plan || state.billing.plan;
+  state.billing.planName = billing.planName || state.billing.planName;
+  state.billing.caps = billing.caps || state.billing.caps;
+  state.billing.killSwitch = Boolean(billing.killSwitch);
+  state.billing.cooldownUntil = billing.cooldownUntil || null;
+  state.billing.card = billing.card || null;
+  emit("billing");
+}
+
+// setInvoiceList(invoices): the server's invoices replace the seeded samples the
+// moment a live read answers, so the page never shows a fabricated receipt.
+export function setInvoiceList(invoices) {
+  if (!Array.isArray(invoices)) return;
+  state.billing.invoices = invoices;
   emit("billing");
 }

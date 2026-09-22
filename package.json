@@ -3,11 +3,39 @@
   "version": "1.0.8",
   "private": true,
   "type": "module",
-  "description": "The operator app: a client-side frontend that runs standalone on the bundled sim; serve it with node serve.mjs.",
+  "description": "The autonomous agent platform: a finished client frontend (src/, standalone on its sim via serve.mjs) and the multi-tenant server under server/ that runs it live.",
   "scripts": {
-    "start": "node serve.mjs"
+    "start": "node server/index.js",
+    "static": "node serve.mjs",
+    "dev": "node --watch-path=server server/index.js",
+    "test": "node --test \"test/contract/**/*.test.mjs\"",
+    "e2e": "node --test \"test/e2e/**/*.spec.mjs\"",
+    "gates:p1": "node test/gates/p1.gates.mjs",
+    "db:up": "docker compose up -d postgres redis minio",
+    "db:down": "docker compose down",
+    "gates:p2": "node test/gates/p2.gates.mjs",
+    "gates:p3": "node test/gates/p3.gates.mjs",
+    "gates:p4": "node test/gates/p4.gates.mjs",
+    "gates:p6": "node test/gates/p6.gates.mjs",
+    "gates:p7": "node test/gates/p7.gates.mjs",
+    "gates:p8": "node test/gates/p8.gates.mjs",
+    "soak:p8": "node test/gates/p8.soak.mjs",
+    "daemon": "node server/daemon/supervise.mjs",
+    "pipeline": "node server/pipeline/cli.mjs",
+    "gates:p5": "node test/gates/p5.gates.mjs",
+    "gates:p12": "node test/gates/p12.gates.mjs",
+    "gates:p12:load": "node test/gates/p12.load.mjs",
+    "ops:restore": "node server/ops/restore.mjs",
+    "ops:drill": "node server/ops/restore.mjs drill"
   },
   "dependencies": {
-    "playwright": "^1.63.0"
+    "@anthropic-ai/claude-agent-sdk": "^0.3.278",
+    "@aws-sdk/client-s3": "^3.1136.0",
+    "pg": "^8.23.0",
+    "playwright": "^1.63.0",
+    "zod": "^4.6.5"
+  },
+  "imports": {
+    "#img/*": "./server/connectors/*"
   }
 }

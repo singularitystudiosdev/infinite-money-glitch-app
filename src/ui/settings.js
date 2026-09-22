@@ -3,7 +3,7 @@
 import { CREDITS_LOW, CREDIT_PACKS } from "../data.js";
 import { icon } from "../icons.js";
 import { navigate } from "../router.js";
-import { CREDITS_PER_DOLLAR, addCredits, endSession, get, packById, projects, pushNotification, resetAll, setBuying, setCard, setOther, setPack, setTopUp, setUser, subscribe } from "../store.js";
+import { CREDITS_PER_DOLLAR, addCredits, endSession, get, packById, projects, pushNotification, resetAll, setBillingRemote, setBuying, setCard, setInvoiceList, setNotify, setOther, setPack, setTopUp, setUser, subscribe } from "../store.js";
 import { EASE_STD, announce, downloadText, escapeHtml, formatNum, odometerTo, reduceMotion, riseIn, runButton, shortDate } from "../util.js";
 import { avatarInner, squareImage } from "./avatar.js";
 import { cardMarkup, cardWire, saveCard } from "./card.js";
@@ -13,6 +13,8 @@ export const SECTIONS = [
   { id: "account", label: "Account", icon: "user" },
   { id: "credits", label: "Credits", icon: "coins" },
   { id: "billing", label: "Billing", icon: "credit-card" },
+  { id: "connections", label: "Connections", icon: "layout-grid" },
+  { id: "notifications", label: "Notifications", icon: "bell" },
 ];
 
 const packRow = (p, on) => `<label class="c-settings__pack${on ? " is-selected" : ""}"><input type="radio" name="credit-pack" value="${p.id}" class="sr-only" data-credit-pack${on ? " checked" : ""}><span class="c-settings__radio"></span><span class="c-settings__pack-body"><span class="c-settings__pack-credits">${formatNum(p.credits)} credits</span>${p.note ? `<span class="c-settings__pack-note">${p.note}</span>` : ""}</span><span class="c-settings__pack-price">$${p.price}</span></label>`;
@@ -95,9 +97,21 @@ function wireCredits(stage, subs) {
       select(otherRadio);
     }
   });
-  stage.querySelector("[data-credits-topup]").addEventListener("change", (e) => {
-    setTopUp(e.target.checked);
-    announce(e.target.checked ? "Top-up on" : "Top-up off");
+  stage.querySelector("[data-credits-topup]").addEventListener("change", async (e) => {
+    const on = e.target.checked;
+    setTopUp(on);
+    announce(on ? "Top-up on" : "Top-up off");
+    // the preference is the SERVER's (it is what charges the card off-session),
+    // so the switch writes through. A page with no backend keeps the local
+    // switch and says nothing: the sim must not depend on a server being there.
+    try {
+      const res = await fetch("/api/billing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "topup", topUp: on }) });
+      if (!res.ok) throw new Error(`topup ${res.status}`);
+      const json = await res.json();
+      if (json.account?.billing) setBillingRemote(json.account.billing);
+    } catch (err) {
+      console.debug("top-up preference not saved to a backend:", err.message);
+    }
   });
   stage.querySelector("[data-credits-buy]").addEventListener("click", async (e) => {
     const button = e.currentTarget;
@@ -248,14 +262,40 @@ function billingMarkup() {
     : `<p class="c-settings__line">No card yet. Add the one the packs bill to.</p>`;
   return `<div class="c-settings__section" data-settings-body="billing">
   <h3 class="c-settings__h">Billing</h3>
+  <div data-billing-live></div>
   <h4 class="c-settings__sub">Payment method</h4>
   ${card}
   <div data-card-slot${b.card ? " hidden" : ""}>${cardMarkup({ bare: true, id: "billing-card", action: b.card ? "Save new card" : "Save card" })}</div>
+  <button type="button" class="btn" data-card-setup><span class="btn__icon"></span><span class="btn__label">Add a card</span></button>
   <h4 class="c-settings__sub">Invoices</h4>
   <p class="c-settings__line">Receipts go to ${escapeHtml(get().user.email)} after each purchase.</p>
   <table class="app-table"><thead><tr><th>Date</th><th>Invoice</th><th>What</th><th class="app-table__num">Amount</th><th>Status</th><th><span class="sr-only">Download</span></th></tr></thead><tbody data-invoices>${b.invoices.map(invoiceRow).join("")}</tbody></table>
   <div class="app-rows__empty" data-invoices-empty${b.invoices.length ? " hidden" : ""}><span>No invoices yet. The first pack you buy lands here.</span><a class="btn" href="#/settings/credits">Buy credits</a></div>
 </div>`;
+}
+
+// the live block: plan, the caps in force, spend today and this week, the token
+// split behind it and the per-project and per-connector breakdown. Everything
+// here comes from one GET /api/billing; with no backend it stays empty and says
+// so in one line rather than inventing a number.
+const tokenLine = (t) => `${formatNum(t.input)} in, ${formatNum(t.cached)} cached, ${formatNum(t.output)} out`;
+
+function billingLiveMarkup(v) {
+  if (!v) return `<p class="c-settings__line" data-billing-note>No backend is answering, so these figures are not live.</p>`;
+  const caps = v.caps || {};
+  const row = (label, used, limit) => `<div class="app-row app-row--plain"><span class="app-row__text"><span class="app-row__title">${label}</span><span class="app-row__sub">${formatNum(used)} of ${limit ? formatNum(limit) : "no cap"} credits</span></span><span class="app-pill">${limit && used >= limit ? "Cap hit, held" : "Running"}</span></div>`;
+  const projects = (v.usage?.byProject || []).slice(0, 5).map((p) => `<li class="app-row"><span class="app-row__text"><span class="app-row__title">${escapeHtml(p.projectId)}</span><span class="app-row__sub">${formatNum(p.credits)} credits over ${p.calls} call(s)</span></span></li>`).join("");
+  const connectors = (v.usage?.byConnector || []).slice(0, 5).map((c) => `<li class="app-row"><span class="app-row__text"><span class="app-row__title">${escapeHtml(c.kind)}</span><span class="app-row__sub">${formatNum(c.credits)} credits over ${c.calls} call(s)</span></span></li>`).join("");
+  return `<h4 class="c-settings__sub">Plan</h4>
+  <div class="app-row app-row--plain">${icon("credit-card")}<span class="app-row__text"><span class="app-row__title">${escapeHtml(v.plan?.name || v.account?.billing?.planName || "Trial")}</span><span class="app-row__sub">${formatNum(v.plan?.includedCredits || 0)} credits included each month${v.plan?.overage ? ", overage from the meter" : ", no overage"}</span></span>${v.account?.billing?.status === "held" ? '<span class="app-pill">Held</span>' : ""}</div>
+  <h4 class="c-settings__sub">Caps</h4>
+  ${row("Today", v.usage?.today?.credits || 0, caps.tenant?.day?.limit)}
+  ${row("This week", v.usage?.week?.credits || 0, null)}
+  ${row("This month", caps.tenant?.month?.used || 0, caps.tenant?.month?.limit)}
+  <h4 class="c-settings__sub">Where it went</h4>
+  <p class="c-settings__line" data-token-split>Tokens: ${tokenLine(v.usage?.tokens || { input: 0, cached: 0, output: 0 })}</p>
+  <ul class="app-rows" data-usage-projects>${projects || '<li class="app-row app-row--plain"><span class="app-row__text"><span class="app-row__sub">Nothing spent in the last 30 days.</span></span></li>'}</ul>
+  <ul class="app-rows" data-usage-connectors>${connectors}</ul>`;
 }
 
 function wireBilling(stage, subs, host) {
@@ -270,7 +310,67 @@ function wireBilling(stage, subs, host) {
     await new Promise((r) => setTimeout(r, 900));
     host.again();
   });
-  stage.addEventListener("click", (e) => {
+
+  // the live read: plan, caps, usage, invoices. It REPLACES the seeded sample
+  // invoices the moment a server answers, so the page never shows a fabricated
+  // receipt beside a real balance.
+  const live = stage.querySelector("[data-billing-live]");
+  const load = async () => {
+    try {
+      const res = await fetch("/api/billing");
+      if (!res.ok) throw new Error(String(res.status));
+      const v = await res.json();
+      if (v.account?.billing) setBillingRemote(v.account.billing);
+      if (Array.isArray(v.invoices)) {
+        setInvoiceList(
+          v.invoices.map((i) => ({ id: i.id, at: new Date(i.periodEnd || i.at).getTime(), amount: Number(i.amountUsd || 0).toFixed(2), desc: `Credits used ${new Date(i.periodStart).toISOString().slice(0, 10)} to ${new Date(i.periodEnd).toISOString().slice(0, 10)}`, status: i.status === "paid" ? "Paid" : "Open" })),
+        );
+      }
+      if (live) live.innerHTML = billingLiveMarkup(v);
+    } catch (err) {
+      console.debug("billing read unavailable:", err.message);
+      if (live) live.innerHTML = billingLiveMarkup(null);
+    }
+  };
+  load();
+
+  // the card step: the server mints a hosted setup page, the browser completes
+  // it THERE, and the popup polls the verify leg until a payment method is
+  // attached — the same shape every connector's connect ends with
+  stage.querySelector("[data-card-setup]")?.addEventListener("click", async (e) => {
+    const button = e.currentTarget;
+    const label = button.querySelector(".btn__label");
+    const slot = button.querySelector(".btn__icon");
+    button.setAttribute("aria-busy", "true");
+    if (slot) slot.innerHTML = icon("loader-circle", "btn__spinner");
+    try {
+      const made = await fetch("/api/card/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create" }) }).then((r) => r.json());
+      if (!made.ok) throw new Error(made.error || "the card page did not open");
+      if (made.url) window.open(made.url, "_blank", "noopener");
+      if (label) label.textContent = "Waiting for the card";
+      const intentId = made.setupIntentId;
+      for (let i = 0; i < 60 && intentId; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const out = await fetch("/api/card/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify", setupIntentId: intentId }) }).then((r) => r.json());
+        if (out.ok) {
+          setCard({ brand: out.card.brand, last4: out.card.last4, exp: out.card.expMonth ? `${String(out.card.expMonth).padStart(2, "0")} / ${String(out.card.expYear).slice(-2)}` : "", holder: out.card.holder });
+          pushNotification("upload", `${out.card.brand} ending ${out.card.last4} saved`);
+          announce("Card saved");
+          host.again();
+          return;
+        }
+      }
+      throw new Error("the card was not added");
+    } catch (err) {
+      pushNotification("system", `Card setup failed: ${String(err.message || err)}`);
+      if (label) label.textContent = "Add a card";
+    } finally {
+      button.removeAttribute("aria-busy");
+      if (slot) slot.innerHTML = "";
+    }
+  });
+
+  stage.addEventListener("click", async (e) => {
     if (e.target.closest("[data-card-replace]")) {
       const slot = stage.querySelector("[data-card-slot]");
       slot.hidden = false;
@@ -281,7 +381,19 @@ function wireBilling(stage, subs, host) {
     const dl = e.target.closest("[data-invoice]");
     if (dl) {
       const i = get().billing.invoices.find((x) => x.id === dl.dataset.invoice);
-      downloadText(`${i.id}.txt`, `Invoice ${i.id}\nDate: ${new Date(i.at).toDateString()}\nBilled to: ${get().user.name} <${get().user.email}>\n\n${i.desc}    $${i.amount}.00\nStatus: ${i.status}\n`);
+      // the invoice the SERVER holds downloads from the server; a seeded sample
+      // has no server behind it and falls back to the client's own text
+      try {
+        const res = await fetch(`/api/billing/invoice?id=${encodeURIComponent(i.id)}`);
+        if (res.ok) {
+          downloadText(`${i.id}.txt`, await res.text());
+          announce(`Downloaded ${i.id}`);
+          return;
+        }
+      } catch (err) {
+        console.debug("invoice download fell back to the local copy:", err.message);
+      }
+      downloadText(`${i.id}.txt`, `Invoice ${i.id}\nDate: ${new Date(i.at).toDateString()}\nBilled to: ${get().user.name} <${get().user.email}>\n\n${i.desc}    $${i.amount}\nStatus: ${i.status}\n`);
       announce(`Downloaded ${i.id}`);
     }
   });
@@ -292,7 +404,245 @@ function wireBilling(stage, subs, host) {
   }));
 }
 
-const BODIES = { account: [accountMarkup, wireAccount], credits: [creditsMarkup, wireCredits], billing: [billingMarkup, wireBilling] };
+const BODIES = { account: [accountMarkup, wireAccount], credits: [creditsMarkup, wireCredits], billing: [billingMarkup, wireBilling], connections: [connectionsMarkup, wireConnections], notifications: [notificationsMarkup, wireNotifications] };
+
+// ---------- connections ----------
+//
+// What this account has connected, how each one is standing, and what the
+// platform is building right now. The catalog read gives the stations; every
+// connected row then reads its own health route, so a green "Connected" is a
+// live probe rather than a stored claim, and a revoked grant shows as what it
+// is with Reconnect one press away. Reconnecting is the SAME consent route the
+// composer's popup uses, so re-consent and first-consent are one code path.
+// When no backend answers (the static demo) the section says so in one line
+// rather than failing open into an empty list.
+
+const CAT_GROUPS = [
+  { id: "connected", label: "Connected", empty: "Nothing is connected yet.", action: null },
+  { id: "available", label: "Available", empty: "Every connector in the catalog is connected.", action: null },
+  { id: "building", label: "Being built", empty: "Nothing is being built. A goal that needs a service the catalog lacks starts a build here.", action: null },
+];
+
+const tierLine = (c) =>
+  c.tier === "browser"
+    ? "browser-driven"
+    : c.auth === "api_key"
+      ? "one key"
+      : c.auth === "session"
+        ? "one-time sign-in"
+        : c.auth === "none"
+          ? "no sign-in needed"
+          : "sign in once";
+
+// one row: the provider mark, the name, what it does, and where it stands.
+// Four slots of the five a row carries (mark, title, sub, status), so a row is
+// never a bare name and a timestamp.
+const catalogRow = (c) => {
+  const status = c.status === "connected" ? "Connected" : c.status === "staged" ? "Built, waiting on uses" : c.status === "building" ? "Building" : "Ready to connect";
+  const caps = (c.capabilities || []).slice(0, 3).map((x) => String(x).replace(/_/g, " ")).join(", ");
+  const sub = [status, tierLine(c), caps].filter(Boolean).join(". ");
+  // a connected row also carries its live probe line, under the static one
+  const health = c.status === "connected" ? `<span class="app-row__sub" data-conn-health="${escapeHtml(c.id)}">Checking health…</span>` : "";
+  const acts = c.status === "connected"
+    ? `<button type="button" class="btn btn--quiet" data-reconnect="${escapeHtml(c.id)}"><span class="btn__label">Reconnect</span></button><button type="button" class="btn btn--quiet" data-disconnect="${escapeHtml(c.id)}"><span class="btn__label">Disconnect</span></button>`
+    : `<button type="button" class="btn btn--quiet" data-connect="${escapeHtml(c.id)}"><span class="btn__label">Connect</span></button>`;
+  return `<li class="app-row" data-connector="${escapeHtml(c.id)}">${icon(c.status === "connected" ? "check" : c.status === "building" ? "clock" : "compass")}<span class="app-row__text"><span class="app-row__title">${escapeHtml(c.name)}${c.provenance?.promotedAt ? ' <span class="app-pill">Shared</span>' : c.status === "staged" ? ' <span class="app-pill">Staged</span>' : ""}</span><span class="app-row__sub">${escapeHtml(sub)}</span>${health}</span><span class="app-conn__acts">${acts}</span></li>`;
+};
+
+// the health line for one connected row: what the platform's own probe last
+// saw, never a claim the page makes up. A revoked grant reads as revoked.
+const healthText = (h) => {
+  if (!h) return "Health could not be read.";
+  const status = h.health?.status || (h.connected ? "ok" : "unknown");
+  const reason = h.health?.reason ? `, ${h.health.reason}` : "";
+  const quota = h.quota ? `, ${formatNum(h.quota.used || 0)} of ${h.quota.limit ? formatNum(h.quota.limit) : "no"} calls today` : "";
+  return `${h.connected ? "Connected" : "Not connected"}: ${status}${reason}${quota}`;
+};
+
+const buildingRow = (b) => `<li class="app-row" data-build="${escapeHtml(b.id)}">${icon("clock")}<span class="app-row__text"><span class="app-row__title">${escapeHtml(b.service || b.capability || "a connector")}</span><span class="app-row__sub">${escapeHtml([`Building (${b.phase})`, b.rung ? `reached ${b.rung}` : "", b.detail].filter(Boolean).join(". "))}</span></span></li>`;
+
+const failedRow = (m) => `<li class="app-row" data-miss="${escapeHtml(m.id)}">${icon("circle-alert")}<span class="app-row__text"><span class="app-row__title">${escapeHtml(m.service || m.capability)}</span><span class="app-row__sub">${escapeHtml([`Could not be built (${m.evidence?.rung || "no surface"})`, m.evidence?.reason].filter(Boolean).join(". "))}</span></span><button type="button" class="btn btn--quiet" data-retry="${escapeHtml(m.id)}"><span class="btn__label">Try again</span></button></li>`;
+
+const groupMarkup = (g) => `<section data-cat-group="${g.id}"><h4 class="c-settings__sub">${g.label} <span class="app-pill" data-cat-count="${g.id}">…</span></h4>
+  <ul class="app-rows" data-cat-list="${g.id}">${[0, 1, 2].map(() => `<li class="app-row app-row--plain" data-skeleton aria-busy="true">${icon("loader-circle")}<span class="app-row__text"><span class="c-settings__skeleton" style="width: 9rem"></span><span class="c-settings__skeleton c-settings__skeleton--sub" style="width: 14rem"></span></span></li>`).join("")}</ul>
+  <div class="app-rows__empty" data-cat-empty="${g.id}" hidden><span>${g.empty}</span></div></section>`;
+
+function connectionsMarkup() {
+  return `<div class="c-settings__section" data-settings-body="connections">
+  <h3 class="c-settings__h">Connections</h3>
+  <p class="c-settings__note" data-cat-summary aria-live="polite">Reading the catalog…</p>
+  ${CAT_GROUPS.slice(0, 2).map(groupMarkup).join("")}
+  <section data-cat-group="building"><h4 class="c-settings__sub">Being built <span class="app-pill" data-cat-count="building">…</span></h4>
+    <ul class="app-rows" data-cat-list="building"></ul>
+    <div class="app-rows__empty" data-cat-empty="building" hidden><span>Nothing is being built. A goal that needs a service the catalog lacks starts a build here.</span></div>
+    <ul class="app-rows" data-cat-failed></ul>
+  </section>
+  <button type="button" class="btn btn--quiet" data-cat-refresh><span class="btn__icon">${icon("rotate-ccw")}</span><span class="btn__label">Refresh</span></button>
+</div>`;
+}
+
+function wireConnections(stage, subs) {
+  let alive = true;
+  const paintGroup = (id, rows, emptyText) => {
+    const list = stage.querySelector(`[data-cat-list="${id}"]`);
+    const empty = stage.querySelector(`[data-cat-empty="${id}"]`);
+    const count = stage.querySelector(`[data-cat-count="${id}"]`);
+    if (!list) return;
+    list.innerHTML = rows.join("");
+    if (count) count.textContent = String(rows.length);
+    if (empty) empty.hidden = rows.length > 0;
+  };
+  const load = async () => {
+    const summary = stage.querySelector("[data-cat-summary]");
+    if (summary) summary.textContent = "Reading the catalog…";
+    let view = null;
+    try {
+      const res = await fetch("/api/catalog");
+      if (res.ok) view = await res.json();
+    } catch (err) {
+      console.error("catalog read failed:", err);
+    }
+    if (!alive) return;
+    if (!view) {
+      for (const g of CAT_GROUPS) paintGroup(g.id, [], g.empty);
+      paintGroup("building", [], CAT_GROUPS[2].empty);
+      if (summary) summary.textContent = "No backend is answering here, so this page is reading a catalog with nothing live behind it.";
+      return;
+    }
+    const customer = (view.connectors || []).filter((c) => !c.provenance?.promotedAt || true);
+    const byStation = { connected: [], available: [], building: [] };
+    for (const c of customer) (byStation[c.status] || byStation.available).push(catalogRow(c));
+    paintGroup("connected", byStation.connected);
+    paintGroup("available", byStation.available);
+    paintGroup("building", (view.building || []).map(buildingRow));
+    // each connected row reads its own probe: "connected" here means the
+    // platform just checked, not that a grant was once stored
+    for (const c of (view.connectors || []).filter((x) => x.status === "connected")) {
+      fetch(`/api/connect/${encodeURIComponent(c.id)}/health`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((h) => {
+          if (!alive) return;
+          const slot = stage.querySelector(`[data-conn-health="${CSS.escape(c.id)}"]`);
+          if (slot) slot.textContent = healthText(h);
+        })
+        .catch((err) => console.debug(`health for ${c.id}:`, err.message));
+    }
+    const failed = (view.misses || []).filter((m) => m.status === "failed" || m.status === "open");
+    const failedList = stage.querySelector("[data-cat-failed]");
+    if (failedList) failedList.innerHTML = failed.map(failedRow).join("");
+    if (summary) {
+      const n = view.counts || {};
+      summary.textContent = `${n.connected || 0} connected, ${n.available || 0} available to connect, ${n.building || 0} being built${n.staged ? `, ${n.staged} staged for this account` : ""}.`;
+    }
+  };
+  stage.querySelector("[data-cat-refresh]")?.addEventListener("click", () => load());
+  stage.addEventListener("click", async (e) => {
+    const retry = e.target.closest("[data-retry]");
+    if (retry) {
+      retry.setAttribute("aria-busy", "true");
+      await fetch("/api/capabilities/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ missId: retry.dataset.retry }) }).catch((err) => console.error("build start failed:", err));
+      announce("Building it now");
+      load();
+      return;
+    }
+    const connect = e.target.closest("[data-connect]");
+    if (connect) {
+      // the consent route the composer's popup uses, reached with no project:
+      // a connector can be connected from here before any goal needed it
+      const first = projects()[0];
+      window.open(`/api/connect/${encodeURIComponent(connect.dataset.connect)}/start${first ? `?project=${encodeURIComponent(first.id)}` : ""}`, "_blank", "noopener");
+      return;
+    }
+    // reconnect is the SAME route: consent is re-asked, so a revoked or stale
+    // grant is repaired by the path that made it, never by a second flow
+    const again = e.target.closest("[data-reconnect]");
+    if (again) {
+      const first = projects()[0];
+      window.open(`/api/connect/${encodeURIComponent(again.dataset.reconnect)}/start${first ? `?project=${encodeURIComponent(first.id)}` : ""}`, "_blank", "noopener");
+      announce(`Re-consent opened for ${again.dataset.reconnect}`);
+      return;
+    }
+    const drop = e.target.closest("[data-disconnect]");
+    if (drop) {
+      drop.setAttribute("aria-busy", "true");
+      try {
+        const res = await fetch(`/api/connect/${encodeURIComponent(drop.dataset.disconnect)}/disconnect`, { method: "POST", headers: { "Content-Type": "application/json" } });
+        if (!res.ok) throw new Error(String(res.status));
+        announce(`${drop.dataset.disconnect} disconnected`);
+      } catch (err) {
+        console.error("disconnect failed:", err);
+        announce("That connection could not be dropped");
+      }
+      drop.removeAttribute("aria-busy");
+      load();
+    }
+  });
+  load();
+  const timer = setInterval(() => {
+    if (!alive) return;
+    const anyBuilding = stage.querySelector("[data-cat-list='building'] li[data-build]");
+    if (anyBuilding) load();
+  }, 5000);
+  subs.push(() => {
+    alive = false;
+    clearInterval(timer);
+  });
+}
+
+// ---------- notifications ----------
+//
+// Which of the agent's own events reach you, and where. Kept on the account
+// (store setNotify) and read by pushNotification BEFORE a row is created, so a
+// preference is enforced at the source rather than filtered at the bell.
+
+const QUIET_LABEL = { off: "Off", "22-07": "22:00 to 07:00", all: "All the time" };
+const NOTIFY_ROWS = [
+  ["needs", "Asks", "A question only you can answer."],
+  ["insight", "Insights", "Something it worked out worth reading."],
+  ["sale", "Sales and money", "A sale, a payout, an invoice, a cap."],
+  ["upload", "Uploads and artifacts", "Something published, generated or saved."],
+  ["model", "Model notices", "A model call that failed or was held."],
+  ["system", "System", "Platform notices, halts, security findings."],
+  ["email", "Also email me", "A copy of every notification to the account's inbox."],
+  ["bell", "In-app bell", "Show the badge and keep the log at all."],
+];
+
+function notificationsMarkup() {
+  const n = get().notify;
+  return `<div class="c-settings__section" data-settings-body="notifications">
+  <h3 class="c-settings__h">Notifications</h3>
+  <p class="c-settings__line">What reaches you, and where. Quiet hours hold the bell and the email together.</p>
+  <ul class="app-rows" data-notify-list>${NOTIFY_ROWS.map(([id, label, hint]) => `<li class="app-row app-row--plain">${icon("bell")}<span class="app-row__text"><span class="app-row__title">${label}</span><span class="app-row__sub">${hint}</span></span><label class="c-settings__toggle c-settings__toggle--row"><input type="checkbox" class="c-settings__check" data-notify="${id}"${n[id] !== false ? " checked" : ""}><span class="sr-only">${label}</span></label></li>`).join("")}</ul>
+  <h4 class="c-settings__sub">Quiet hours</h4>
+  <div class="app-row app-row--plain">${icon("moon")}<span class="app-row__text"><span class="app-row__title">Hold the bell overnight</span><span class="app-row__sub">Asks still land; the rest waits until morning.</span></span><span class="c-dd"><button type="button" class="c-composer__chip pick-plain" aria-haspopup="menu" aria-expanded="false" data-quiet-chip><span data-quiet-label>${QUIET_LABEL[n.quiet] || "Off"}</span>${icon("chevron-down")}</button><div class="c-menu panel" role="menu" aria-label="Quiet hours" hidden>${["off", "22-07", "all"].map((q) => `<button type="button" class="c-menu__item" role="menuitemradio" aria-checked="${n.quiet === q}" data-quiet="${q}"><span class="c-menu__text">${QUIET_LABEL[q]}</span></button>`).join("")}</div></span></div>
+</div>`;
+}
+
+function wireNotifications(stage) {
+  stage.addEventListener("change", (e) => {
+    const box = e.target.closest("[data-notify]");
+    if (!box) return;
+    setNotify(box.dataset.notify, box.checked);
+    announce(`${box.dataset.notify} ${box.checked ? "on" : "off"}`);
+  });
+  const chip = stage.querySelector("[data-quiet-chip]");
+  const menu = chip?.closest(".c-dd")?.querySelector(".c-menu");
+  chip?.addEventListener("click", () => {
+    const opening = menu.hidden;
+    menu.hidden = !opening;
+    chip.setAttribute("aria-expanded", String(opening));
+  });
+  menu?.addEventListener("click", (e) => {
+    const pick = e.target.closest("[data-quiet]");
+    if (!pick) return;
+    setNotify("quiet", pick.dataset.quiet);
+    for (const item of menu.querySelectorAll("[data-quiet]")) item.setAttribute("aria-checked", String(item === pick));
+    stage.querySelector("[data-quiet-label]").textContent = QUIET_LABEL[pick.dataset.quiet];
+    menu.hidden = true;
+    chip.setAttribute("aria-expanded", "false");
+    announce(`Quiet hours: ${QUIET_LABEL[pick.dataset.quiet].toLowerCase()}`);
+  });
+}
 
 export function render(root, { section }) {
   // an address with no section behind it (the old Notifications one included) opens Credits

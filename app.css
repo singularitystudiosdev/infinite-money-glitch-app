@@ -2750,6 +2750,8 @@ html[data-vt="swap"]::view-transition-new(root) {
      extension above and below carries the tap area to the floor */
   .c-insights__filter {
     position: relative;
+    width: auto;
+    min-width: var(--target);
     min-height: 32px;
     padding-inline: var(--spacing-10);
   }
@@ -3638,6 +3640,30 @@ html[data-vt="swap"]::view-transition-new(root) {
 .c-action--pop .c-action__btn > .c-tool__spin {
   color: inherit;
 }
+/* the key and session tiers render inside the same popup (P4) */
+.c-action--pop .c-action__help {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted, #6b6b6b);
+}
+.c-action--pop .c-action__help a { display: inline-flex; align-items: center; gap: 3px; color: var(--fg, #1a1a1a); text-decoration: underline; text-underline-offset: 2px; }
+.c-action--pop .c-action__shot { width: 100%; max-width: 360px; border-radius: 9px; border: 1px solid var(--border, #e6e3df); }
+.c-action--pop .c-action__frame { width: 100%; max-width: 420px; border-radius: 9px; border: 1px solid var(--border, #e6e3df); background: #fff; }
+.c-action--pop .c-action__keyrow { display: flex; align-items: center; gap: 8px; width: 100%; }
+.c-action--pop .c-action__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e6e3df);
+  background: var(--bg, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+.c-action--pop .c-action__link { font-size: 12px; color: var(--muted, #6b6b6b); text-decoration: underline; }
 .c-action--pop .c-action__label {
   animation: action-label-in var(--duration-150) var(--ease-standard);
 }
@@ -3701,6 +3727,17 @@ html[data-vt="swap"]::view-transition-new(root) {
 .c-milestone__title a { color: inherit; text-decoration: none; }
 .c-milestone__text { font: var(--type-label); color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .c-milestone__open { width: 14px; height: 14px; margin-left: auto; flex: none; color: var(--color-text-tertiary); }
+/* an audio artifact wears a level wave: the same card draws on the demo path
+   and the live one (chat.js waveMarkup), so the rules live with the component */
+.c-milestone__wave { display: flex; align-items: center; gap: 2px; height: 20px; margin-left: var(--spacing-8); }
+.c-milestone__wave i { width: 2px; height: 30%; border-radius: 1px; background: var(--color-text-secondary); animation: milestone-wave var(--duration-1000) ease-in-out infinite; /* deliberate: a looping wave, not a transition */ }
+.c-milestone__wave i:nth-child(3n) { animation-delay: -0.2s; height: 60%; }
+.c-milestone__wave i:nth-child(3n + 1) { animation-delay: -0.5s; height: 90%; }
+.c-milestone__wave i:nth-child(4n) { animation-delay: -0.8s; height: 45%; }
+@keyframes milestone-wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
 
 /* an occasional screenshot of what the agent was looking at */
 .c-shot { display: grid; gap: var(--spacing-3); margin: var(--spacing-4) 0; }
@@ -3735,3 +3772,130 @@ audio.app-dialog__media { width: min(420px, 100%); }
   font: var(--type-label);
 }
 .c-thinking svg { width: 14px; height: 14px; flex: none; }
+
+/* the catalog view (P5 SCOPE 8): a loading row keeps the row's own anatomy,
+   so a slow catalog read never collapses into one "Loading…" line */
+.c-settings__note {
+  margin: 0 0 var(--spacing-12);
+  color: var(--color-text-secondary);
+  font: var(--type-body);
+}
+.c-settings__skeleton {
+  display: block;
+  height: 0.7em;
+  border-radius: var(--radius-4);
+  background: var(--color-hairline);
+}
+.c-settings__skeleton--sub { margin-top: var(--spacing-4); opacity: 0.65; }
+
+/* ---------- the ledger card (P10): the swarm's items on the rail ---------- */
+
+.app-ledger {
+  display: grid;
+  gap: var(--spacing-8);
+  min-height: 0;
+  padding: var(--spacing-12);
+}
+
+.app-ledger__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+.app-ledger__list {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+.app-ledger__list:hover { scrollbar-color: var(--color-hairline-strong) transparent; }
+.app-ledger__list:empty { display: none; }
+
+.app-ledger__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8);
+  border-radius: var(--radius-8);
+  transition: background var(--duration-150) var(--ease-standard);
+}
+
+.app-ledger__row:hover { background: var(--color-canvas); }
+
+.app-ledger__mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-quiet);
+}
+
+.app-ledger__row.is-completed .app-ledger__mark { color: var(--color-success, var(--color-text)); }
+.app-ledger__row.is-blocked .app-ledger__mark { color: var(--color-danger, var(--color-text)); }
+.app-ledger__spin { animation: app-ledger-spin 900ms linear infinite; }
+
+@keyframes app-ledger-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-ledger__spin { animation: none; }
+}
+
+.app-ledger__body { display: grid; gap: 2px; min-width: 0; }
+.app-ledger__top { display: flex; align-items: baseline; gap: var(--spacing-6); min-width: 0; }
+.app-ledger__id { font-family: var(--font-mono, monospace); font-size: var(--font-size-100); color: var(--color-text-quiet); }
+.app-ledger__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-size-200); }
+.app-ledger__status { font-size: var(--font-size-100); color: var(--color-text-quiet); text-transform: lowercase; }
+.app-ledger__row.is-completed .app-ledger__title { color: var(--color-text-quiet); }
+
+.app-ledger__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-4);
+  font-size: var(--font-size-100);
+  color: var(--color-text-quiet);
+  min-width: 0;
+}
+
+.app-ledger__line svg { flex: none; width: 12px; height: 12px; }
+.app-ledger__line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-ledger__line.is-block { color: var(--color-danger, var(--color-text-quiet)); }
+.app-ledger__meta { font-size: var(--font-size-100); color: var(--color-text-quiet); opacity: 0.8; }
+.app-ledger__x { align-self: start; }
+.app-ledger__none { display: grid; gap: var(--spacing-4); padding: var(--spacing-8) var(--spacing-12); }
+.app-ledger__none-title { font-size: var(--font-size-200); }
+.app-ledger__none-sub { font-size: var(--font-size-100); color: var(--color-text-quiet); }
+
+/* ---------- #/demos: the demo list ---------- */
+
+/* one row per goal; the request the user would type is the headline, so the
+   list reads as a menu of briefs rather than a gallery of thumbnails */
+.app-demos__list { display: grid; gap: var(--spacing-8, 8px); padding: var(--spacing-8, 8px) var(--spacing-12, 12px) var(--spacing-16, 16px); align-content: start; }
+.demo-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-12, 12px);
+  padding: var(--spacing-12, 12px) var(--spacing-12, 12px);
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-8, 8px);
+  transition: background 120ms cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+.demo-row:hover, .demo-row:focus-visible { background: var(--color-surface-hover, rgb(0 0 0 / 4%)); }
+.demo-row__play, .demo-row__go { display: inline-flex; color: var(--color-text-secondary); }
+.demo-row__body { display: grid; gap: 2px; min-width: 0; }
+.demo-row__title { font-size: var(--font-size-200, 15px); font-weight: 600; }
+.demo-row__request { font-size: var(--font-size-100, 13px); color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

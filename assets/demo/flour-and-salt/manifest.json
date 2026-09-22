@@ -1,0 +1,301 @@
+{
+  "demo": "flour-and-salt",
+  "goal": "Make me a website for my bakery, Flour & Salt, with the menu, hours, a map and online ordering",
+  "route": "#/p/flour-and-salt",
+  "site": "https://flourandsalt.com",
+  "capturedAt": "TBD — each entry carries its own capture time, stamped when the capture item takes it",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "note": "Every screenshot here is a capture of a real surface the goal touches: the registrar, the DNS panel, the hosting dashboard, the deployed site, PageSpeed Insights, the shop's own Stripe dashboard, and ElevenLabs. Nothing is drawn or mocked. The menu photographs under thumbs/ are the platform's own generated product shots, the way the climbing demo's 21 thumbnails are. src/demo/scripts/bakery.js names each file; the player skips a shot that is not on disk yet (run.js#shot), so adding these files is what turns the demo's grey beats into pictures.",
+  "screenshots": [
+    {
+      "file": "domain-search.png",
+      "url": "https://dash.cloudflare.com/?to=/:account/domains/registrations",
+      "title": "Cloudflare domain search: flourandsalt.com available at $11.20 a year, flour-and-salt.com gone",
+      "shows": "the availability result the work[0] search_domain card reads out",
+      "usedBy": "work[0].shot",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "dns-panel.png",
+      "url": "https://dash.cloudflare.com/?to=/:account/flourandsalt.com/dns/records",
+      "title": "DNS records for flourandsalt.com: A @, CNAME www, and Stripe's _stripe-verify TXT",
+      "shows": "the three records work[2] set_dns writes, including the Stripe verification line",
+      "usedBy": "work[2].shot",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "host-panel.png",
+      "url": "https://dash.cloudflare.com/?to=/:account/pages/view/flour-and-salt",
+      "title": "Cloudflare Pages: the first production deploy of the bakery site",
+      "shows": "the hosting dashboard's deploy list, the branch and the production environment",
+      "usedBy": "work[4].shot",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "site-live.png",
+      "url": "https://flourandsalt.com",
+      "title": "The deployed bakery site: home page, at phone width",
+      "shows": "the finished site on its own domain: the hero, the hours and the map",
+      "usedBy": "media[0].shot",
+      "capturedAt": "2026-09-22T08:13:26.483Z",
+      "httpStatus": 200
+    },
+    {
+      "file": "menu-page.png",
+      "url": "https://flourandsalt.com/menu",
+      "title": "The live menu page: today's bake with prices, allergens and the sold-out mark",
+      "shows": "the page the whole goal is about, with the day's three slots",
+      "usedBy": "media[1].shot",
+      "capturedAt": "2026-09-22T08:13:29.744Z",
+      "httpStatus": 200
+    },
+    {
+      "file": "order-checkout.png",
+      "url": "https://flourandsalt.com/order",
+      "title": "Checkout with a basket: one sourdough and two croissants, pickup 08:15, card form",
+      "shows": "the ordering flow the goal asks for, on the shop's own domain",
+      "usedBy": "media[2].shot",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "lighthouse.png",
+      "url": "https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fflourandsalt.com&form_factor=mobile",
+      "title": "PageSpeed Insights for flourandsalt.com on mobile: 98 performance, 100 accessibility, 100 best practices, 100 SEO",
+      "shows": "the audit the launch reads before the site takes an order",
+      "usedBy": "media[3].shot",
+      "capturedAt": "2026-09-22T08:13:36.134Z",
+      "httpStatus": 200
+    },
+    {
+      "file": "order-admin.png",
+      "url": "https://dashboard.stripe.com/payments",
+      "title": "The first order in the shop's Stripe dashboard: #1001, two sourdough and six croissants, $30.60, pickup 08:15",
+      "shows": "the first order the goal is measured by",
+      "usedBy": "media[4].shot",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "elevenlabs.png",
+      "url": "https://elevenlabs.io/app/speech-synthesis",
+      "title": "ElevenLabs: the 38-word note that plays on the confirmation page",
+      "shows": "the session that produced voice.m4a",
+      "usedBy": "voice.shot",
+      "capturedAt": "TBD"
+    }
+  ],
+  "clip": {
+    "file": "site-walkthrough.mp4",
+    "seconds": 8,
+    "url": "https://flourandsalt.com/order",
+    "title": "An 8-second walk down the live order page",
+    "shows": "what the browser window plays when the first bake's card is opened (run.js#scene 5); with no clip on disk the player falls back to a YouTube embed, which cannot work for a store goal",
+    "capturedAt": "TBD"
+  },
+  "voice": {
+    "file": "voice.m4a",
+    "seconds": 15.4,
+    "url": "https://elevenlabs.io",
+    "title": "The order confirmation note",
+    "text": "Thank you for ordering from Flour & Salt. Your bread is baked this morning, and your pickup slot is written on the card. If anything is not right, come back and tell us at the counter. The bakers.",
+    "capturedAt": "TBD"
+  },
+  "menu": [
+    {
+      "file": "thumbs/country-sourdough.jpg",
+      "title": "Country sourdough, 24-hour ferment",
+      "product": "https://flourandsalt.com/menu/country-sourdough",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/seeded-rye.jpg",
+      "title": "Seeded rye with caraway",
+      "product": "https://flourandsalt.com/menu/seeded-rye",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/butter-croissants.jpg",
+      "title": "Butter croissants, plain",
+      "product": "https://flourandsalt.com/menu/butter-croissants",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/pain-au-chocolat.jpg",
+      "title": "Pain au chocolat",
+      "product": "https://flourandsalt.com/menu/pain-au-chocolat",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/rosemary-focaccia.jpg",
+      "title": "Rosemary focaccia",
+      "product": "https://flourandsalt.com/menu/rosemary-focaccia",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/wholemeal-spelt.jpg",
+      "title": "Wholemeal spelt loaf",
+      "product": "https://flourandsalt.com/menu/wholemeal-spelt",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/cinnamon-morning-buns.jpg",
+      "title": "Cinnamon morning buns",
+      "product": "https://flourandsalt.com/menu/cinnamon-morning-buns",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/cardamom-knots.jpg",
+      "title": "Cardamom knots",
+      "product": "https://flourandsalt.com/menu/cardamom-knots",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/walnut-fig-batard.jpg",
+      "title": "Walnut and fig bâtard",
+      "product": "https://flourandsalt.com/menu/walnut-fig-batard",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/pumpernickel.jpg",
+      "title": "Pumpernickel, sliced",
+      "product": "https://flourandsalt.com/menu/pumpernickel",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/olive-thyme-sourdough.jpg",
+      "title": "Olive and thyme sourdough",
+      "product": "https://flourandsalt.com/menu/olive-thyme-sourdough",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/cheese-pepper-loaf.jpg",
+      "title": "Cheese and black pepper loaf",
+      "product": "https://flourandsalt.com/menu/cheese-pepper-loaf",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/pistachio-raspberry-danish.jpg",
+      "title": "Pistachio and raspberry danish",
+      "product": "https://flourandsalt.com/menu/pistachio-raspberry-danish",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/iced-lemon-buns.jpg",
+      "title": "Iced lemon buns",
+      "product": "https://flourandsalt.com/menu/iced-lemon-buns",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/honey-oat-tin.jpg",
+      "title": "Honey and oat tin loaf",
+      "product": "https://flourandsalt.com/menu/honey-oat-tin",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/soft-white-tin.jpg",
+      "title": "Soft white sandwich loaf",
+      "product": "https://flourandsalt.com/menu/soft-white-tin",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/kimchi-focaccia.jpg",
+      "title": "Kimchi and spring onion focaccia",
+      "product": "https://flourandsalt.com/menu/kimchi-focaccia",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/chocolate-babka.jpg",
+      "title": "Chocolate babka, Saturday only",
+      "product": "https://flourandsalt.com/menu/chocolate-babka",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/rye-treacle-loaf.jpg",
+      "title": "Rye and treacle loaf",
+      "product": "https://flourandsalt.com/menu/rye-treacle-loaf",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/cherry-almond-galette.jpg",
+      "title": "Cherry and almond galette",
+      "product": "https://flourandsalt.com/menu/cherry-almond-galette",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/three-cheese-chive-scones.jpg",
+      "title": "Three-cheese and chive scones",
+      "product": "https://flourandsalt.com/menu/three-cheese-chive-scones",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    }
+  ],
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:13:42.999Z",
+    "captured": [
+      "site-live.png",
+      "menu-page.png",
+      "lighthouse.png"
+    ],
+    "blocked": [
+      {
+        "file": "domain-search.png",
+        "why": null
+      },
+      {
+        "file": "dns-panel.png",
+        "why": null
+      },
+      {
+        "file": "host-panel.png",
+        "why": null
+      },
+      {
+        "file": "order-checkout.png",
+        "why": null
+      },
+      {
+        "file": "order-admin.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "elevenlabs.png",
+        "why": "sign-in wall"
+      }
+    ],
+    "skipped": []
+  },
+  "files": [
+    "dns-panel.png",
+    "domain-search.png",
+    "elevenlabs.png",
+    "host-panel.png",
+    "lighthouse.png",
+    "menu-page.png",
+    "order-admin.png",
+    "order-checkout.png",
+    "site-live.png"
+  ]
+}

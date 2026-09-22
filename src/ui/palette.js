@@ -18,6 +18,7 @@ function entries() {
   for (const p of get().projects.filter((x) => !x.draft)) list.push({ group: "Projects", icon: "folder-open", label: p.name, hint: p.thoughts[p.step], run: () => navigate(projectPath(p.id)) });
   list.push(
     { group: "Pages", icon: "house", label: "Home", hint: "Every project", run: () => navigate("/") },
+    { group: "Pages", icon: "play", label: "Demos", hint: "Every goal the demo can play", run: () => actions.demos?.() },
     { group: "Pages", icon: "inbox", label: "Activity", hint: "Everything that happened", run: () => navigate("/activity") },
     { group: "Pages", icon: "user", label: "Settings: Account", run: () => navigate("/settings/account") },
     { group: "Pages", icon: "coins", label: "Settings: Credits", hint: `${get().credits.balance.toLocaleString("en-US")} left`, run: () => navigate("/settings/credits") },

@@ -2,7 +2,7 @@
 // the frontend runs on it: threads, plans, setup, tools and the daemon all
 // come from SSE events; sending posts /api/turn. When it does not answer,
 // every caller falls back to the scripted sim (sim.js path).
-import { deleteProject, project, pushThread, pushActivity, setBusy, setCreditsBalance, setPlan, agreePlan, pushStored, mergeNotifications, applyNotificationsRead, applyNotificationsClear, reconcileServerProjects, emit } from "./store.js";
+import { deleteProject, project, pushThread, pushActivity, setBusy, setCreditsBalance, setPlan, agreePlan, pushStored, mergeNotifications, applyNotificationsRead, applyNotificationsClear, reconcileServerProjects, setBillingRemote, emit } from "./store.js";
 
 let es = null;
 let connected = false;
@@ -79,6 +79,10 @@ const removed = new Set();
 function upsertProject(sp) {
   if (removed.has(sp.id)) return;
   const existing = project(sp.id);
+  // what the rail drew before this word arrived, so the mission rows can be
+  // told what actually moved
+  const before = existing ? (existing.missions || []) : [];
+  const beforePaused = existing ? Boolean(existing.paused) : undefined;
   if (existing) {
     Object.assign(existing, sp);
     // a claimed draft lives in the store under the same id; the first
@@ -91,7 +95,17 @@ function upsertProject(sp) {
   // the async addServerProject may not have landed yet; a missing project
   // must not throw the whole stream handler
   const pp = project(sp.id);
-  if (pp) emit("setup", { id: sp.id, setup: pp.setup });
+  if (!pp) return;
+  emit("setup", { id: sp.id, setup: pp.setup });
+  // The missions card repaints off the MISSION topic, not off "projects": a
+  // press on the row, the bar, the step line and the "N running" header all
+  // hang off it (src/ui/log.js:216). The server sends whole projects, so the
+  // rows would sit frozen at the number the page first drew without this.
+  for (const m of sp.missions || []) {
+    const prev = before.find((b) => b && b.id === m.id);
+    if (!prev || prev.progress !== m.progress || prev.status !== m.status || prev.phase !== m.phase || prev.rowStatus !== m.rowStatus) emit("mission", { project: pp, mission: m });
+  }
+  if (beforePaused !== undefined && beforePaused !== Boolean(pp.paused)) emit("pause", { id: sp.id, paused: pp.paused });
 }
 
 function apply(evt) {
@@ -100,6 +114,7 @@ function apply(evt) {
     case "hello": {
       if (evt.daemon) daemon = evt.daemon;
       if (Number.isFinite(evt.account?.credits)) setCreditsBalance(evt.account.credits);
+      if (evt.account?.billing) setBillingRemote(evt.account.billing);
       // a reconnect takes the server's word for what exists
       removed.clear();
       for (const sp of evt.projects || []) upsertProject(sp);
@@ -117,6 +132,9 @@ function apply(evt) {
     }
     case "account": {
       if (Number.isFinite(evt.account?.credits)) setCreditsBalance(evt.account.credits);
+      // the plan, the caps, the top-up preference and the card ride the account
+      // event: billing has no event type of its own (the list is pinned at 17)
+      if (evt.account?.billing) setBillingRemote(evt.account.billing);
       break;
     }
     case "thread": {
@@ -162,7 +180,11 @@ function apply(evt) {
     }
     case "activity": {
       const e = evt.entry || {};
-      pushActivity(id, e.kind || "work", e.text);
+      // the WHOLE entry rides through: an insight's delta is what its pill
+      // draws (log.js:67), and dropping it here is what left live mode with no
+      // deltas at all. The server's id and time are kept too, so the same row
+      // arriving twice updates in place rather than doubling.
+      pushActivity(id, e.kind || "work", e.text, { ...e, kind: e.kind || "work", text: e.text });
       break;
     }
     case "plan": {
@@ -197,13 +219,44 @@ function apply(evt) {
     case "stats": {
       const p = project(id);
       if (!p) break;
-      for (const [k, v] of Object.entries(evt.stats || {})) {
-        if (k === "revenue" && v != null) {
-          p.revenue = v;
-          p.history = [...p.history.slice(1), Math.max(0, v - (p.baseline || 0))];
-        } else if (p.stats[k] != null) p.stats[k] = v;
+      const tiles = new Set();
+      const stats = evt.stats || {};
+      // the rail's own descriptor for each key that moved (label + format), so
+      // a project whose KPIs were never predicted still draws the connector's
+      // number under the connector's label
+      if (Array.isArray(evt.tiles)) {
+        p.metricTiles = { ...(p.metricTiles || {}) };
+        for (const t of evt.tiles) p.metricTiles[t.id] = t;
       }
+      // only the keys that moved arrive, and every one of them is a live tile
+      for (const [k, v] of Object.entries(stats)) {
+        p.stats[k] = v;
+        tiles.add(k);
+        // the P1 contract's spelling: a payload of {stats:{revenue:N}} IS the
+        // project's revenue, and test/contract/events.test.mjs drives exactly
+        // that shape. P7's poller also sends a top-level `revenue`; both work.
+        if (k === "revenue" && v != null) p.revenue = v;
+      }
+      // the KPI counters the goal's tiles are valued from (running.js:55-56)
+      if (evt.kpi && typeof evt.kpi === "object") {
+        p.counters = { ...(p.counters || {}), kpi: { ...((p.counters || {}).kpi || {}), ...evt.kpi } };
+        for (const k of Object.keys(evt.kpi)) tiles.add(k);
+      }
+      // the series the graph draws, when it rode along: 14 days and the 30 before
+      if (Array.isArray(evt.users)) p.users = evt.users;
+      if (Array.isArray(evt.history)) p.history = evt.history;
+      if (Number.isFinite(evt.revenue)) p.revenue = evt.revenue;
+      if (Number.isFinite(evt.baseline)) p.baseline = evt.baseline;
+      const revenue = Number.isFinite(evt.revenue) ? evt.revenue : Number(stats.revenue);
+      if (Number.isFinite(revenue) && !Array.isArray(evt.history)) {
+        // no series came with this one: keep the old derivation so the
+        // revenue pill still moves on a single number
+        p.history = [...(p.history || []).slice(1), Math.max(0, revenue - (p.baseline || 0))];
+      }
+      const tile = evt.tile && tiles.has(evt.tile) ? evt.tile : [...tiles].at(-1) || null;
       emit("projects", { changed: id });
+      if (tile) emit("stats", { project: p, tile });
+      if (Array.isArray(evt.users)) emit("users", { id });
       break;
     }
     // the bell's log, kept by the server: a push from any session (our own
@@ -307,15 +360,31 @@ export async function pauseLive(projectId, paused) {
   }
 }
 
+// every POST carries the double-submit token the page can read (img_csrf):
+// the server refuses a POST without it
+const writeHeaders = () => ({ "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/(?:^|;\s*)img_csrf=([^;]+)/)?.[1] || "" });
+
 export async function spawnSubagents(projectId, { task, model, tools, count }) {
   try {
     const r = await fetch("/api/subagents", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: writeHeaders(),
       body: JSON.stringify({ projectId, task, model, tools, count }),
     });
     const j = await r.json();
-    return r.ok ? { ok: true, count: j.count } : { ok: false, error: j.error || `HTTP ${r.status}` };
+    return r.ok ? { ok: true, count: j.count, ids: j.ids || [], queued: j.queued || [] } : { ok: false, error: j.error || `HTTP ${r.status}` };
+  } catch (err) {
+    return { ok: false, error: String(err.message || err) };
+  }
+}
+
+// cancel one ledger item: it leaves the ready set, so the next round does not
+// pick it up (P10 SCOPE 4)
+export async function cancelLedgerItem(projectId, itemId) {
+  try {
+    const r = await fetch("/api/ledger", { method: "POST", headers: writeHeaders(), body: JSON.stringify({ projectId, action: "cancel", itemId }) });
+    const j = await r.json();
+    return r.ok ? { ok: true, cancelled: j.cancelled } : { ok: false, error: j.error || `HTTP ${r.status}` };
   } catch (err) {
     return { ok: false, error: String(err.message || err) };
   }

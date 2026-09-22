@@ -22,7 +22,9 @@ export const DONE_FX = [
 const doneWord = () => doneEffect() !== "flash";
 
 // live missions carry a phase (frame/plan/...), not the sim's steps array
-const missionStep = (m) => (m.progress >= 100 ? "Done" : m.steps ? m.steps[Math.min(m.steps.length - 1, Math.floor((m.progress / 100) * m.steps.length))] : m.phase || "Working");
+// an EMPTY steps array is truthy, and indexing it gave -1: every mission whose
+// plan had not landed yet drew the literal word "undefined" as its sub-line
+const missionStep = (m) => (m.progress >= 100 ? "Done" : m.steps && m.steps.length ? m.steps[Math.min(m.steps.length - 1, Math.floor((m.progress / 100) * m.steps.length))] : m.phase || "Working");
 const missionThink = (m) => `${m.progress >= 100 ? icon("check") : icon("loader-circle", "btn__spinner")}<span data-mission-step>${missionStep(m)}</span>`;
 
 // a manager's mission carries its site as a link; a subagent's task is

@@ -21,7 +21,7 @@ const FAMILIES = [
   { id: "web", label: "Web", hint: "fetch pages, search" },
   { id: "browser", label: "Browser", hint: "drive a real browser" },
   { id: "media", label: "Media", hint: "images, voice, ffmpeg" },
-  { id: "youtube", label: "YouTube", hint: "upload and check" },
+  { id: "connectors", label: "Connected services", hint: "whatever the catalog has" },
   { id: "memory", label: "Memory", hint: "project key/value store" },
 ];
 

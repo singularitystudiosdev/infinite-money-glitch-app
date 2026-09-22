@@ -9,9 +9,12 @@ import { EASE_OUT, announce, escapeHtml, reduceMotion } from "../util.js";
 import { renderChat } from "./chat.js";
 import { confirmDialog, renameDialog, settle } from "./dialog.js";
 import { startNewProject } from "./home.js";
+import { renderFiles } from "./ide.js";
+import { renderLedger } from "./ledger.js";
 import { renderLog } from "./log.js";
 import { renderRunning } from "./running.js";
 import { renderSide } from "./side.js";
+import { renderSubagents } from "./subagents.js";
 
 // the project's own actions, on a small menu at the right of the chat head
 // rename and delete; pausing lives on the composer's strip
@@ -20,15 +23,18 @@ const MENU = [
   { id: "delete", icon: "trash", label: "Delete project", danger: true },
 ];
 // the ways the right rail can be arranged, top to bottom. numbers is the
-// analytics card; activity is the missions with the whole log under them;
-// tasks is the missions alone; updates is the log cut to what is worth a
-// look (insights, sales, breakthroughs, asks). Picked at the rail's top.
+// analytics card; subagents is the workers the card can spawn; ledger is the
+// swarm's items; files is the workspace the agent writes into; activity is the
+// missions with the whole log under them; tasks is the missions alone; updates
+// is the log cut to what is worth a look. Picked at the rail's top, and the
+// scrolling log card stays LAST in every arrangement (project.js paintRail
+// fits the rail around the foot card).
 export const LAYOUTS = [
-  { id: "classic", label: "Classic", cards: ["numbers", "activity"] },
-  { id: "activity", label: "Activity first", cards: ["activity", "numbers"] },
-  { id: "split", label: "Tasks and updates", cards: ["numbers", "tasks", "updates"] },
-  { id: "split-first", label: "Tasks and updates first", cards: ["tasks", "updates", "numbers"] },
-  { id: "updates", label: "Updates only", cards: ["numbers", "updates"] },
+  { id: "classic", label: "Classic", cards: ["numbers", "subagents", "ledger", "files", "activity"] },
+  { id: "activity", label: "Activity first", cards: ["subagents", "ledger", "files", "activity", "numbers"] },
+  { id: "split", label: "Tasks and updates", cards: ["numbers", "ledger", "files", "tasks", "updates"] },
+  { id: "split-first", label: "Tasks and updates first", cards: ["ledger", "files", "tasks", "updates", "numbers"] },
+  { id: "updates", label: "Updates only", cards: ["numbers", "ledger", "files", "updates"] },
 ];
 
 const menuMarkup = () => `<span class="c-dd app-chat__menu"><button type="button" class="btn btn--icon btn--quiet" data-menu aria-haspopup="menu" aria-expanded="false" aria-label="Project options">${icon("ellipsis")}</button><div class="c-menu panel" role="menu" aria-label="Project options" hidden>${MENU.map((m) => `<button type="button" class="c-menu__item${m.danger ? " c-menu__item--danger" : ""}" role="menuitem" data-action="${m.id}">${icon(m.icon)}<span class="c-menu__text">${m.label}</span></button>`).join("")}</div></span>`;
@@ -100,6 +106,9 @@ export function render(root, { id }) {
   const cards = rail.querySelector("[data-rail-cards]");
   const CARDS = {
     numbers: (el) => renderRunning(el, id),
+    subagents: (el) => renderSubagents(el, id),
+    ledger: (el) => renderLedger(el, id),
+    files: (el) => renderFiles(el, id),
     activity: (el) => renderLog(el, id),
     tasks: (el) => renderLog(el, id, { mode: "tasks" }),
     updates: (el) => renderLog(el, id, { mode: "updates" }),

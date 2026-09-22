@@ -1,3 +1,17 @@
 node_modules/
-.tmp/
-.DS_Store
+# demo recordings (record.mjs, POST /api/demo/record)
+.tmp/recordings/
+# local dev state: throwaway MinIO data, the local media fallback, logs
+.tmp/minio-data/
+.tmp/logs/
+server/.media/
+server/.env
+# per-tenant workspace cache and the SDK config dir (P2)
+server/.workspaces/
+.tmp/sdk-home/
+# the capability-synthesis loop's staging root (P5): a synthesised connector is
+# a build product, promoted into the catalog when it has earned its uses
+server/connectors/staged/
+# the session tier's per-tenant browser profiles and the vault's dev master key
+server/.sessions/
+server/.vault-key

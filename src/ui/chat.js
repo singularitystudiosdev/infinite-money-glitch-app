@@ -8,6 +8,9 @@
 // come back.
 import { MODELS } from "../data.js";
 import { icon, STRIPE_MARK, YOUTUBE_MARK } from "../icons.js";
+// the two brand marks the icon set carries by name: a connector manifest's
+// `mark` is what selects one, never a branch on the provider (doctrine 1)
+const BRAND_MARKS = { youtube: YOUTUBE_MARK, stripe: STRIPE_MARK };
 import { kindOf, planFor } from "../kinds.js";
 import { MODES, agreePlan, busyBy, changePlan, claimDraft, connectorsPending, emit, get, isBusy, isRunning, project, projectMode, pushActivity, pushNotification, pushThread, setBusy, setPaused, setPlan, setProjectGoal, setProjectMode, setProjectModel, setupSteps, subscribe } from "../store.js";
 import { EASE_OUT, EASE_STD, MOD, announce, escapeHtml, formatMoney, formatNum, linkParts, reduceMotion, richText, uid, wait } from "../util.js";
@@ -16,6 +19,11 @@ import { renderSetup, setupDoneMarkup } from "./setup.js";
 import { liveConnected, planLive, sendLive } from "../live.js";
 
 const THREAD_LIMIT = 80;
+// a long thread draws its last WINDOW items with one button above them for the
+// rest: thousands of cards in the DOM is what makes a scroll stutter, and the
+// reader is at the foot anyway. Loading earlier widens the window by another
+// one, so nothing is ever lost, only not drawn (SCOPE 8).
+const THREAD_WINDOW = 240;
 // what you typed and did not send, per chat: it is back in the box when
 // you return, and gone once it is sent
 const unsent = new Map();
@@ -107,18 +115,24 @@ export async function revealText(el, text, scroll) {
 
 // a milestone: one moment that matters, named with its evidence — a video
 // uploaded (linked), a clip generated, a voiceover recorded
-const milestoneMark = (name) => (name === "youtube" ? YOUTUBE_MARK : icon(name || "badge-check"));
+const milestoneMark = (name) => BRAND_MARKS[name] || icon(name || "badge-check");
 // a milestone you can see through: one with a src (the clip, the
 // voiceover) opens its media right in a dialog; one with a url (the
 // video) links out to it
+// an audio artifact (a voiceover) wears a level wave inside its card: it is
+// sound you are looking at, and the same card draws on the demo path and the
+// live one (SCOPE 5: one renderer, two callers)
+const isAudioArtifact = (it) => it.media === "audio" || /\.(m4a|mp3|wav|aac|ogg|opus)$/i.test(String(it.src || ""));
+const waveMarkup = (it) => (isAudioArtifact(it) ? `<span class="c-milestone__wave" aria-hidden="true">${"<i></i>".repeat(18)}</span>` : "");
 export const milestoneMarkup = (it) => {
+  const wave = waveMarkup(it);
   // the whole card is the artifact's door: a url makes the card a real link
   // (external artifact), a src makes it a player (local artifact) — no card
   // is ever a dead end the user can't click
   if (it.url) {
-    return `<a class="c-milestone is-viewable" href="${escapeHtml(it.url)}" target="_blank" rel="noopener"><span class="c-milestone__mark">${milestoneMark(it.icon)}</span><span class="c-milestone__body"><span class="c-milestone__title">${escapeHtml(it.title)}</span>${it.text ? `<span class="c-milestone__text">${escapeHtml(it.text)}</span>` : ""}</span>${icon("arrow-up-right", "c-milestone__open")}</a>`;
+    return `<a class="c-milestone is-viewable" href="${escapeHtml(it.url)}" target="_blank" rel="noopener"><span class="c-milestone__mark">${milestoneMark(it.icon)}</span><span class="c-milestone__body"><span class="c-milestone__title">${escapeHtml(it.title)}</span>${it.text ? `<span class="c-milestone__text">${escapeHtml(it.text)}</span>` : ""}</span>${icon("arrow-up-right", "c-milestone__open")}${wave}</a>`;
   }
-  return `<div class="c-milestone${it.src ? " is-viewable" : ""}"${it.src ? ` role="button" tabindex="0" data-view-src="${escapeHtml(it.src)}" data-view-title="${escapeHtml(it.title)}"` : ""}><span class="c-milestone__mark">${milestoneMark(it.icon)}</span><span class="c-milestone__body"><span class="c-milestone__title">${escapeHtml(it.title)}</span>${it.text ? `<span class="c-milestone__text">${escapeHtml(it.text)}</span>` : ""}</span>${it.src ? `${icon("play", "c-milestone__open")}` : ""}</div>`;
+  return `<div class="c-milestone${it.src ? " is-viewable" : ""}"${it.src ? ` role="button" tabindex="0" data-view-src="${escapeHtml(it.src)}" data-view-title="${escapeHtml(it.title)}"` : ""}><span class="c-milestone__mark">${milestoneMark(it.icon)}</span><span class="c-milestone__body"><span class="c-milestone__title">${escapeHtml(it.title)}</span>${it.text ? `<span class="c-milestone__text">${escapeHtml(it.text)}</span>` : ""}</span>${it.src ? `${icon("play", "c-milestone__open")}` : ""}${wave}</div>`;
 };
 
 // a subagent thread item: spawned (its task) and finished (its result),
@@ -175,26 +189,41 @@ const APPROVAL = new RegExp(`^(?:${APPROVAL_WORD}[\\s!.,]*)+$`, "i");
 // the project whose thread is being drawn, for the cards that read the
 // project rather than the item
 let currentPlanId = null;
-// connectable actions, one place: a probe names the step the verifier can
-// check, the map says where the step happens, and a matching action docks a
-// popup over the composer; actions without a probe keep the plain card
-// each probe names the platform, its mark and where the step happens; the
-// popup renders every platform the same way: mark, "Connect <Platform> Account",
-// Connect. YouTube is never one: its path is the signed-in browser profile
-const CONNECT_ACTIONS = {
-  stripe_connect: { platform: "Stripe", mark: STRIPE_MARK, url: "https://dashboard.stripe.com/apikeys" },
-  // Connect opens the app's own sign-in view (a headless profile on Google's
-  // sign-in) so the scan/tap lands where the session actually lives
-  youtube_session: { platform: "YouTube", mark: YOUTUBE_MARK, url: "/api/youtube/signin" },
-};
-const connectableAction = (it) => {
+// A connectable action is DATA the server docked, and the popup renders it as
+// it stands: the probe the verifier runs, the tier the connector uses, the
+// platform's own name, the manifest's mark, where the step happens and, for the
+// key tier, where to copy the key from. There is no per-connector branch here
+// and no map of known probes: any connector the catalog gains, or the platform
+// synthesises later, docks the same item and draws the same popup (doctrine 1).
+// The only default is the consent route, which is the handler's own address for
+// the probe's id, so an item that carries no url still has a way to connect.
+export const connectableAction = (it) => {
   if (it.kind !== "action" || it.done || !it.probe) return null;
-  const known = CONNECT_ACTIONS[it.probe] || {};
-  const url = it.url || known.url;
-  if (!url) return null;
-  const platform = it.platform || known.platform || "";
-  return { url, platform, mark: known.mark || icon("external-link"), title: platform ? `Connect ${platform} Account` : it.title || "Connect account" };
+  // an action the popup can answer is one that names the account flow it
+  // needs: oauth2, api_key or session. The card step carries no tier of its
+  // own and is finished in the setup checklist, so it never takes the popup's
+  // place and never counts as a connection waiting.
+  const tier = it.auth || it.tier || null;
+  if (!tier || tier === "card") return null;
+  return {
+    url: it.url || `/api/connect/${encodeURIComponent(it.probe)}/start`,
+    platform: it.platform || "",
+    probe: it.probe,
+    tier,
+    // the action carries the manifest's mark NAME; it is resolved through the
+    // icon set with a neutral fallback, never injected as HTML (an unknown
+    // icon id must not throw a page error or print itself)
+    mark: toolIconMarkup(it.mark || "external-link"),
+    keyHelp: it.keyHelp || null,
+    title: it.title || (it.platform ? `Connect ${it.platform} Account` : "Connect account"),
+  };
 };
+
+// the popup's row: the mark, the title, the reason slot and the one button.
+// Exported because the demo draws the SAME popup from the same action item
+// (SCOPE 5) — a hand-written copy in run.js is exactly how the two drift.
+export const actionPopMarkup = (item, { title = item.title } = {}) =>
+  `<span class="c-action__mark">${item.mark}</span><span class="c-action__title">${escapeHtml(title)}</span><span class="sr-only" role="status" data-action-reason></span><button type="button" class="c-action__btn" data-action-connect><span class="sr-only" data-action-name>Connect</span></button>`;
 const actionKey = (it) => `${it.at || 0}:${it.title || ""}`;
 // actions settled this session (verified, done by hand or dismissed) never pop again
 const settledActions = new Set();
@@ -209,12 +238,78 @@ const settledActions = new Set();
 // reads as the user's words
 const operatorMarkup = (it) => `<div class="c-note"><strong>Operator:</strong> ${escapeHtml(String(it.text || "").replace(/\*\*/g, "").replace(/^#+ /gm, ""))}</div>`;
 
-const mediaMarkup = (it) => {
-  const src = `/ws/${currentPlanId}/${it.file.split("/").map(encodeURIComponent).join("/")}`;
+export const mediaMarkup = (it, projectId = currentPlanId) => {
+  const src = /^(https?:)?\//.test(it.file) ? it.file : `/ws/${projectId}/${it.file.split("/").map(encodeURIComponent).join("/")}`;
   if (it.media === "video") return `<div class="c-media"><video controls preload="metadata" src="${src}"></video></div>`;
   if (it.media === "audio") return `<div class="c-media"><audio controls preload="metadata" src="${src}"></audio></div>`;
   return `<div class="c-media"><img loading="lazy" src="${src}" alt="${escapeHtml(it.title || "generated image")}"></div>`;
 };
+
+// ---------- the cards a running tool draws (one source for the demo and the live path) ----------
+
+// a tool's mark: the platform's icon set, or a connector's own mark. A name
+// the set lacks (a connector's own icon id) falls back to a neutral mark
+// instead of throwing the whole thread render away.
+const ICON_ALIAS = { folder: "folder-open", terminal: "activity", globe: "compass", plug: "external-link", wrench: "sliders-vertical", brain: "layout-grid" };
+export const toolIconMarkup = (name) => {
+  // a brand mark the icon set carries by name (a connector manifest's own mark)
+  if (BRAND_MARKS[name]) return BRAND_MARKS[name];
+  const id = ICON_ALIAS[name] || name || "sliders-vertical";
+  try {
+    return icon(id);
+  } catch {
+    return icon("sliders-vertical");
+  }
+};
+const TOOL_STATUS = {
+  running: () => icon("loader-circle", "c-tool__spin"),
+  done: () => icon("check"),
+  error: () => icon("circle-alert"),
+};
+// a tool call: the row with its arguments, a spinner while it runs, a tick
+// (or an alert) once it settles, and its result unfolding under it. The
+// live path updates the card in place by id as the server's item mutates.
+export const toolMarkup = (t, { demo = false, open = true } = {}) => {
+  const status = t.status || (t.result != null ? "done" : "running");
+  const settled = status !== "running";
+  return `<details class="c-tool${demo ? " demo-tool" : ""}${settled ? " is-done" : ""}${status === "error" ? " is-error" : ""}"${open ? " open" : ""}${t.id ? ` data-tool-card="${escapeHtml(t.id)}"` : ""}><summary><span class="c-tool__icon">${toolIconMarkup(t.icon)}</span><span class="c-tool__call"><span class="c-tool__name">${escapeHtml(t.name || "tool")}</span><span class="c-tool__args">${escapeHtml(t.args == null ? "" : typeof t.args === "string" ? t.args : JSON.stringify(t.args))}</span></span><span class="c-tool__status">${(TOOL_STATUS[status] || TOOL_STATUS.running)()}${settled && t.ms != null ? `<span class="c-tool__ms">${Math.round(t.ms)} ms</span>` : ""}</span></summary><pre class="c-tool__result"${settled && t.result ? "" : " hidden"}>${escapeHtml(t.result || "")}</pre></details>`;
+};
+// the settle of a running card: status mark, done class, result shown
+export function toolCardSettle(el, { status = "done", result = "", ms } = {}) {
+  el.classList.add("is-done");
+  el.classList.toggle("is-error", status === "error");
+  const st = el.querySelector(".c-tool__status");
+  if (st) st.innerHTML = `${(TOOL_STATUS[status] || TOOL_STATUS.done)()}${ms != null ? `<span class="c-tool__ms">${Math.round(ms)} ms</span>` : ""}`;
+  const res = el.querySelector(".c-tool__result");
+  if (res) {
+    if (result) res.textContent = result;
+    res.hidden = !result;
+  }
+  return el;
+}
+// a screenshot the agent took: the picture and its caption
+export const shotMarkup = (s, src, { demo = false } = {}) => `<figure class="c-shot${demo ? " demo-shot" : ""}"${s.id ? ` data-shot-card="${escapeHtml(s.id)}"` : ""}><img src="${escapeHtml(src)}" alt="${escapeHtml(s.caption || "screenshot")}" width="1280" height="800"><figcaption>${icon("camera")}<span>${escapeHtml(s.caption || "")}</span>${s.url ? `<span class="c-shot__url">${escapeHtml(s.url)}</span>` : ""}</figcaption></figure>`;
+// a note the agent left: what it learned, in one line
+export const noteMarkup = (text, { demo = false } = {}) => `<div class="c-note c-note--agent${demo ? " demo-note" : ""}">${icon("pencil")}<span><strong>Note</strong> ${escapeHtml(text)}</span></div>`;
+// a day marker in a long-running thread
+export const dayMarkup = (n, label, { demo = false } = {}) => `<div class="c-day${demo ? " demo-day" : ""}"><span>Day ${escapeHtml(String(n))}${label ? ` · ${escapeHtml(label)}` : ""}</span></div>`;
+// a published video: a milestone card that opens the video, with its thumbnail
+export const videoMarkup = (v, { demo = false } = {}) => {
+  const inner = `${v.thumb ? `<img class="c-video__thumb${demo ? " demo-video__thumb" : ""}" src="${escapeHtml(v.thumb)}" alt="" width="160" height="90">` : `<span class="c-milestone__mark">${icon("clapperboard")}</span>`}<span class="c-milestone__body"><span class="c-milestone__title">${escapeHtml(v.title || "Uploaded")}</span><span class="c-milestone__text">${v.mark ? `<span class="c-video__mark${demo ? " demo-video__mark" : ""}">${v.mark}</span>` : ""}${escapeHtml(v.meta || v.url || "")}</span></span>`;
+  const cls = `c-milestone is-viewable c-video${demo ? " demo-video" : ""}`;
+  // a publication with a url is a link; a dry-run slot published nothing, so
+  // its card carries no href and opens nothing (an href="#" is a dead end)
+  if (!v.url) return `<div class="${cls}">${inner}</div>`;
+  return `<a class="${cls}" href="${escapeHtml(v.url)}" target="_blank" rel="noopener">${inner}${icon("arrow-up-right", "c-milestone__open")}</a>`;
+};
+
+// a live project's media address for a workspace file
+const mediaSrc = (projectId, file) => `/api/media?projectId=${encodeURIComponent(projectId)}&path=${encodeURIComponent(file)}`;
+// a live video item's thumbnail: a workspace file or an absolute url
+const videoThumb = (projectId, v) => (v.thumb ? (/^(https?:)?\//.test(v.thumb) ? v.thumb : mediaSrc(projectId, v.thumb)) : null);
+// live cards draw only for a project the server runs; the sim's tool lines
+// stay on the composer strip as they always have
+const liveCards = (projectId) => Boolean(project(projectId)?.server);
 
 function threadMarkup(items) {
   let out = "";
@@ -235,9 +330,30 @@ function threadMarkup(items) {
     const it = items[i];
     if (it.kind === "thought") continue; // thinking never draws in the stream; it rotates on the composer strip
     if (it.kind === "tool") {
-      // tool lines stay off the stream too: the strip above the composer says what is running
+      if (liveCards(currentPlanId)) {
+        // a real tool run is a card: its arguments, its state and its result
+        out += toolMarkup(it, { open: true });
+        continue;
+      }
+      // the sim's tool lines stay off the stream: the strip above the composer says what is running
       while (items[i + 1]?.kind === "tool") i++;
       continue;
+    }
+    else if (it.kind === "shot" && liveCards(currentPlanId)) {
+      flush();
+      out += shotMarkup(it, mediaSrc(currentPlanId, it.file));
+    }
+    else if (it.kind === "note" && liveCards(currentPlanId)) {
+      flush();
+      out += noteMarkup(it.text);
+    }
+    else if (it.kind === "day" && liveCards(currentPlanId)) {
+      flush();
+      out += dayMarkup(it.n ?? it.day ?? "", it.label);
+    }
+    else if (it.kind === "video" && liveCards(currentPlanId)) {
+      flush();
+      out += videoMarkup({ ...it, thumb: videoThumb(currentPlanId, it) });
     }
     else if (it.kind === "milestone") {
       flush();
@@ -290,7 +406,7 @@ const composerMarkup = (p) => `<form class="c-composer panel app-composer" data-
   <div class="c-composer__status app-now${p.paused ? " is-paused" : ""}" data-status${p.liveStatus ? "" : " hidden"}><span class="app-now__icon" data-status-icon>${p.paused ? icon("pause") : icon("loader-circle", "c-tool__spin")}</span><span class="app-now__label" data-status-label></span><span class="c-composer__status-text app-now__text" data-status-text>${escapeHtml(p.liveStatus || (p.thoughts && p.thoughts[p.step]) || "")}</span><button type="button" class="btn btn--quiet app-now__pause" data-pause-toggle>${p.paused ? `${icon("play")}<span>Resume</span>` : `${icon("pause")}<span>Pause</span>`}</button></div>
   <div class="c-composer__chips" data-chips></div>
   <textarea class="c-composer__input c-composer__area" rows="1" placeholder="${placeholderFor(p)}" aria-label="Message"></textarea>
-  <div class="c-composer__row"><button type="button" class="btn btn--icon btn--quiet" aria-label="Attach a file" data-attach>${icon("paperclip")}</button><input type="file" class="sr-only" data-file multiple tabindex="-1"><span class="c-composer__spacer"></span><span class="c-dd"><button type="button" class="c-composer__chip pick-plain app-mode" data-menu data-mode-chip aria-haspopup="menu" aria-expanded="false" aria-label="Permission mode">${modeChip(p)}${icon("chevron-down")}</button>${modeMenu(p)}</span><span class="c-dd"><button type="button" class="c-composer__chip pick-plain" data-menu aria-haspopup="menu" aria-expanded="false"><span data-menu-label>${escapeHtml(p.model)}</span>${icon("chevron-down")}</button>${modelMenu()}</span><button type="button" class="btn btn--icon btn--quiet" aria-label="Dictate" data-mic aria-pressed="false"><span class="btn__swap"><svg class="icon-16 btn__swap-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19v3m7-12v2a7 7 0 0 1-14 0v-2"/><rect width="6" height="13" x="9" y="2" rx="3"/></svg><svg class="icon-16 btn__swap-wave" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect class="btn__wave-bar" x="4" y="9" width="3" height="6" rx="1.5"/><rect class="btn__wave-bar" x="10.5" y="5" width="3" height="14" rx="1.5"/><rect class="btn__wave-bar" x="17" y="9" width="3" height="6" rx="1.5"/></svg></span></button><button type="submit" class="btn btn--icon btn--send" aria-label="Send" data-send disabled>${icon("arrow-up")}</button></div>
+  <div class="c-composer__row"><button type="button" class="btn btn--icon btn--quiet" aria-label="Attach a file" data-attach>${icon("paperclip")}</button><input type="file" class="sr-only" data-file multiple tabindex="-1" aria-label="Attach a file"><span class="c-composer__spacer"></span><span class="c-dd"><button type="button" class="c-composer__chip pick-plain app-mode" data-menu data-mode-chip aria-haspopup="menu" aria-expanded="false" aria-label="Permission mode">${modeChip(p)}${icon("chevron-down")}</button>${modeMenu(p)}</span><span class="c-dd"><button type="button" class="c-composer__chip pick-plain" data-menu aria-haspopup="menu" aria-expanded="false"><span data-menu-label>${escapeHtml(p.model)}</span>${icon("chevron-down")}</button>${modelMenu()}</span><button type="button" class="btn btn--icon btn--quiet" aria-label="Dictate" data-mic aria-pressed="false"><span class="btn__swap"><svg class="icon-16 btn__swap-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19v3m7-12v2a7 7 0 0 1-14 0v-2"/><rect width="6" height="13" x="9" y="2" rx="3"/></svg><svg class="icon-16 btn__swap-wave" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect class="btn__wave-bar" x="4" y="9" width="3" height="6" rx="1.5"/><rect class="btn__wave-bar" x="10.5" y="5" width="3" height="14" rx="1.5"/><rect class="btn__wave-bar" x="17" y="9" width="3" height="6" rx="1.5"/></svg></span></button><button type="submit" class="btn btn--icon btn--send" aria-label="Send" data-send disabled>${icon("arrow-up")}</button></div>
 </form>`;
 
 // ---------- the tools the agent calls when you ask ----------
@@ -321,9 +437,13 @@ export function renderChat(root, projectId) {
   const kind = kindOf(p().kind);
   let pendingAnswer = null;
   currentPlanId = projectId;
+  // what the thread draws: the tail of it, plus a button for the rest
+  let windowStart = Math.max(0, p().thread.length - THREAD_WINDOW);
+  const earlierMarkup = () => (windowStart > 0 ? `<button type="button" class="btn btn--quiet c-thread__earlier" data-load-earlier><span class="btn__label">Show ${windowStart} earlier line${windowStart === 1 ? "" : "s"}</span></button>` : "");
+  const threadHTML = () => `${earlierMarkup()}${threadMarkup(p().thread.slice(windowStart))}`;
   root.innerHTML = `<div class="c-chat app-chat" data-chat>
   <header class="app-chat__head"><span class="app-chat__title" data-chat-title>${escapeHtml(p().name)}</span><span class="app-chat__paused" data-chat-paused${p().paused ? "" : " hidden"}>Paused</span></header>
-  <div class="app-thread-wrap"><div class="c-thread app-thread" data-thread role="log" aria-label="Conversation" aria-live="polite">${threadMarkup(p().thread)}</div></div>
+  <div class="app-thread-wrap"><div class="c-thread app-thread" data-thread role="log" aria-label="Conversation" aria-live="polite">${threadHTML()}</div></div>
   <button type="button" class="btn c-chat__reopen" data-ask-reopen hidden>Reopen form${icon("chevron-down", "c-chat__reopen-chev")}</button>
   ${composerMarkup(p())}
 </div>`;
@@ -378,6 +498,18 @@ export function renderChat(root, projectId) {
   const prune = () => {
     while (thread.children.length > THREAD_LIMIT) thread.firstElementChild.remove();
   };
+  // Show earlier: widen the window by one and redraw, holding the reader's
+  // place by the pixel they were standing on. The button is the whole feature:
+  // a 2,500-item thread draws its last window and says how much more there is.
+  thread.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-load-earlier]")) return;
+    const wasAt = thread.scrollHeight - thread.scrollTop;
+    windowStart = Math.max(0, windowStart - THREAD_WINDOW);
+    thread.innerHTML = threadHTML();
+    mountSetups();
+    pinned = false;
+    thread.scrollTop = Math.max(0, thread.scrollHeight - wasAt);
+  });
   requestAnimationFrame(scroll);
 
   // the head is the title alone now; nothing to repaint when an ask lands
@@ -566,8 +698,33 @@ export function renderChat(root, projectId) {
       noteThought(item.text);
       return;
     } else if (item.kind === "tool") {
-      // tools stay off the stream; the strip above the composer still says what is running
+      if (liveCards(projectId)) {
+        // a real run draws a card, updated in place by id as it settles
+        liveTurn = null;
+        removeThinking();
+        const prev = item.id ? thread.querySelector(`[data-tool-card="${item.id}"]`) : null;
+        if (prev) {
+          if (item.status && item.status !== "running") toolCardSettle(prev, { status: item.status, result: item.result, ms: item.ms });
+          else prev.outerHTML = toolMarkup(item);
+        } else {
+          const card = append(toolMarkup(item), { force: true });
+          if (!reduceMotion()) card.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 240, easing: EASE_OUT });
+        }
+        if (item.status === "running") setNow(`Running ${item.name}`);
+        follow();
+        return;
+      }
+      // the sim's tools stay off the stream; the strip above the composer still says what is running
       if (!form.dataset.busy) setNow(`Running ${item.name}`);
+      return;
+    } else if (item.kind === "shot" || item.kind === "note" || item.kind === "day" || item.kind === "video") {
+      if (!liveCards(projectId)) return;
+      liveTurn = null;
+      removeThinking();
+      const html = item.kind === "shot" ? shotMarkup(item, mediaSrc(projectId, item.file)) : item.kind === "note" ? noteMarkup(item.text) : item.kind === "day" ? dayMarkup(item.n ?? item.day ?? "", item.label) : videoMarkup({ ...item, thumb: videoThumb(projectId, item) });
+      const card = append(html, { force: true });
+      if (!reduceMotion()) card.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 240, easing: EASE_OUT });
+      follow();
       return;
     } else if (item.kind === "milestone") {
       liveTurn = null;
@@ -870,6 +1027,9 @@ export function renderChat(root, projectId) {
   // only swaps the button's label and state, so the swap can animate and
   // the mark and title never re-render mid-transition
   let popKey = "";
+  // which body the popup is showing: the one-row connect button, the key
+  // tier's copy-from page and field, or the session tier's hand-off window
+  let popMode = "row";
   const POP_BUTTON = {
     connect: () => `<span class="c-action__label">Connect</span>`,
     retry: () => `<span class="c-action__label">Try again</span>`,
@@ -896,8 +1056,17 @@ export function renderChat(root, projectId) {
       popTimer = 0;
       popWatching = false;
       popKey = "";
+      popMode = "row";
       pop.hidden = true;
       pop.innerHTML = "";
+      return;
+    }
+    // the key and session tiers render their own body inside the same popup;
+    // the row renderer must not paint over it (SCOPE 3: everything happens in
+    // the product's own popup, never in a tab the user has to find)
+    if (popMode !== "row") {
+      pop.hidden = false;
+      pop.dataset.phase = pop.phase || "connect";
       return;
     }
     const key = actionKey(popItem.item);
@@ -908,7 +1077,7 @@ export function renderChat(root, projectId) {
       // popup sits, so the count and the one visible ask can never disagree
       const queue = connectorsPending(p());
       const label = queue > 1 ? `${popItem.title} · 1 of ${queue}` : popItem.title;
-      pop.innerHTML = `<span class="c-action__mark">${popItem.mark}</span><span class="c-action__title">${escapeHtml(label)}</span><span class="sr-only" role="status" data-action-reason></span><button type="button" class="c-action__btn" data-action-connect></button>`;
+      pop.innerHTML = actionPopMarkup(popItem, { title: label });
     }
     pop.hidden = false;
     const phase = popPhase === "connect" && popReason ? "retry" : popPhase;
@@ -922,15 +1091,185 @@ export function renderChat(root, projectId) {
     pop.querySelector("[data-action-reason]").textContent = phase === "retry" ? popReason : phase === "connected" ? `${popItem.title}: connected` : "";
   }
 
+  // one Connect press, three tiers. oauth2 opens the provider's consent in a
+  // tab and the verifier polls until the callback lands; api_key renders the
+  // page to copy from and one field; session opens a platform-hosted,
+  // tenant-isolated sign-in window right inside the popup.
   function connectActionPop() {
     if (!popItem) return;
-    window.open(popItem.url, "_blank", "noopener");
+    popReason = "";
     popPhase = "verifying";
     popWatching = true;
     popSince = Date.now();
-    popReason = "";
+    if (popItem.tier === "api_key") return showKeyTier();
+    if (popItem.tier === "session") return startSessionTier();
+    window.open(popItem.url, "_blank", "noopener");
     paintActionPop();
     popTimer = setTimeout(verifyActionPop, VERIFY_MS);
+  }
+
+  // ---------- the key tier: keyHelp + one field ----------
+  async function showKeyTier() {
+    if (!popItem) return;
+    popMode = "key";
+    popKey = "";
+    pop.dataset.phase = "verifying";
+    pop.hidden = false;
+    pop.innerHTML = `<span class="c-action__mark">${popItem.mark}</span><span class="c-action__title">${escapeHtml(popItem.title)}</span><span class="c-action__label" data-key-loading>${icon("loader-circle", "c-tool__spin")} Looking up where to copy the key</span>`;
+    // the item's own keyHelp is the whole source (SCOPE 1). The panel read is
+    // an enrichment; it is never required, so a connector the popup has never
+    // seen still renders its key tier.
+    //
+    // It is needed for the picture: `screenshot` is the ONE keyHelp field a
+    // manifest cannot carry (the connector's contract test asserts the manifest
+    // field is null, because the shot is CAPTURED per tenant from the provider's
+    // own key page by broker.keyHelpFor and served out of the tenant's session
+    // dir). So a docked item that knows the page and the instructions still
+    // reads the panel when it has no shot, and the item's own words win wherever
+    // it has them.
+    //
+    // THE WAIT IS BOUNDED. That read captures the provider's page, which can take
+    // as long as a browser takes to load it — and an unbounded await here left
+    // the popup sitting on "Looking up where to copy the key" forever, which read
+    // as "the popup never settled" and blocked every key-tier connector. After
+    // PANEL_WAIT_MS the popup renders from the item alone: the field, the
+    // instructions and the page, without the picture. The capture carries on
+    // server-side and is cached for the week, so the next open has it.
+    const PANEL_WAIT_MS = 4000;
+    let help = popItem.keyHelp;
+    if (!help?.screenshot) {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), PANEL_WAIT_MS);
+      try {
+        const res = await fetch(`/api/connect/${encodeURIComponent(popItem.probe)}?project=${encodeURIComponent(projectId)}`, { signal: abort.signal });
+        const panelHelp = res.ok ? (await res.json())?.panel?.keyHelp || null : null;
+        if (panelHelp) help = { ...panelHelp, ...(help || {}), screenshot: panelHelp.screenshot || help?.screenshot || null };
+      } catch (err) {
+        console.debug("connect panel unavailable:", err.message);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    if (popMode !== "key" || !popItem) return;
+    const url = help?.url || "";
+    pop.innerHTML = `<span class="c-action__mark">${popItem.mark}</span><span class="c-action__title">${escapeHtml(popItem.title)}</span>
+      <span class="c-action__help">${help?.instructions ? escapeHtml(help.instructions) : `Copy the key from your account`}${url ? ` <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url.replace(/^https?:\/\//, ""))}${icon("arrow-up-right")}</a>` : ""}</span>
+      ${help?.screenshot ? `<img class="c-action__shot" src="${escapeHtml(help.screenshot)}" alt="where the key is on the page" width="360" height="200">` : ""}
+      <span class="c-action__keyrow"><input class="c-action__input" type="password" autocomplete="off" spellcheck="false" placeholder="${escapeHtml(help?.field || "API key")}" data-key-input aria-label="${escapeHtml(help?.field || "API key")}"><button type="button" class="c-action__btn" data-key-submit><span class="c-action__label">Verify</span></button></span>
+      <span class="sr-only" role="status" data-action-reason></span>`;
+    const input = pop.querySelector("[data-key-input]");
+    input?.focus({ preventScroll: true });
+    pop.querySelector("[data-key-submit]")?.addEventListener("click", submitKey);
+    input?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitKey();
+      }
+    });
+  }
+
+  async function submitKey() {
+    const input = pop.querySelector("[data-key-input]");
+    const button = pop.querySelector("[data-key-submit]");
+    if (!input || !button || button.dataset.busy) return;
+    const key = input.value.trim();
+    if (!key) {
+      popReason = "Paste the key first.";
+      pop.querySelector("[data-action-reason]").textContent = popReason;
+      input.focus();
+      return;
+    }
+    button.dataset.busy = "1";
+    button.disabled = true;
+    button.innerHTML = POP_BUTTON.verifying();
+    pop.dataset.phase = "verifying";
+    let ok = false;
+    let reason = VERIFY_UNREACHED;
+    try {
+      const res = await fetch(`/api/connect/${encodeURIComponent(popItem.probe)}/key`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": document.cookie.match(/(?:^|;\s*)img_csrf=([^;]+)/)?.[1] || "" },
+        body: JSON.stringify({ key, projectId }),
+      });
+      const data = await res.json().catch(() => null);
+      ok = res.ok && data?.ok === true;
+      reason = data?.error || data?.reason || reason;
+    } catch {
+      ok = false;
+    }
+    button.disabled = false;
+    delete button.dataset.busy;
+    if (ok) return settleActionPop();
+    pop.dataset.phase = "retry";
+    button.innerHTML = POP_BUTTON.retry();
+    popReason = reason;
+    pop.querySelector("[data-action-reason]").textContent = reason;
+    pop.querySelector("[data-key-input]")?.focus({ preventScroll: true });
+  }
+
+  // ---------- the session tier: a one-time hand-off in a platform-hosted window ----------
+  async function startSessionTier() {
+    if (!popItem) return;
+    popMode = "session";
+    popKey = "";
+    pop.hidden = false;
+    pop.dataset.phase = "verifying";
+    pop.innerHTML = `<span class="c-action__mark">${popItem.mark}</span><span class="c-action__title">${escapeHtml(popItem.title)}</span><span class="c-action__label" data-session-note>${icon("loader-circle", "c-tool__spin")} Opening a sign-in window that belongs to this account only</span>`;
+    let opened = null;
+    try {
+      const res = await fetch(`/api/connect/${encodeURIComponent(popItem.probe)}/session`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": document.cookie.match(/(?:^|;\s*)img_csrf=([^;]+)/)?.[1] || "" },
+        body: JSON.stringify({ action: "open", projectId }),
+      });
+      opened = await res.json().catch(() => null);
+      if (!res.ok || !opened?.ok) throw new Error(opened?.error || "could not open the sign-in window");
+    } catch (err) {
+      popMode = "row";
+      pop.dataset.phase = "retry";
+      popKey = "";
+      popReason = String(err?.message || err);
+      return paintActionPop();
+    }
+    if (popMode !== "session" || !popItem) return;
+    pop.dataset.phase = "connect";
+    pop.innerHTML = `<span class="c-action__mark">${popItem.mark}</span><span class="c-action__title">${escapeHtml(popItem.title)}</span>
+      <span class="c-action__help">Sign in inside the window below. Only the session is kept, never the password.</span>
+      <img class="c-action__frame" data-session-frame src="/api/connect/${encodeURIComponent(popItem.probe)}/session/frame?t=${Date.now()}" alt="the sign-in window" width="420" height="280">
+      <span class="c-action__keyrow"><a class="c-action__link" href="${escapeHtml(opened.url || "#")}" target="_blank" rel="noopener">Open it in a tab instead</a><button type="button" class="c-action__btn" data-session-finish><span class="c-action__label">Finished</span></button></span>
+      <span class="sr-only" role="status" data-action-reason></span>`;
+    const frame = pop.querySelector("[data-session-frame]");
+    const tick = setInterval(() => {
+      if (popMode !== "session" || !frame?.isConnected) return clearInterval(tick);
+      frame.src = `/api/connect/${encodeURIComponent(popItem.probe)}/session/frame?t=${Date.now()}`;
+    }, 2500);
+    pop.querySelector("[data-session-finish]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      if (btn.dataset.busy) return;
+      btn.dataset.busy = "1";
+      btn.disabled = true;
+      btn.innerHTML = POP_BUTTON.verifying();
+      let ok = false;
+      let reason = "the sign-in did not complete";
+      try {
+        const res = await fetch(`/api/connect/${encodeURIComponent(popItem.probe)}/session`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-csrf-token": document.cookie.match(/(?:^|;\s*)img_csrf=([^;]+)/)?.[1] || "" },
+          body: JSON.stringify({ action: "finish", projectId }),
+        });
+        const data = await res.json().catch(() => null);
+        ok = res.ok && data?.ok === true;
+        reason = data?.error || data?.reason || reason;
+      } catch {
+        ok = false;
+      }
+      if (ok) return settleActionPop();
+      delete btn.dataset.busy;
+      btn.disabled = false;
+      btn.innerHTML = POP_BUTTON.retry();
+      popReason = reason;
+      pop.querySelector("[data-action-reason]").textContent = reason;
+    });
   }
 
   // one probe of the verifier; the watch re-arms itself every few seconds
@@ -943,7 +1282,7 @@ export function renderChat(root, projectId) {
     let verified = false;
     let reason = VERIFY_UNREACHED;
     try {
-      const res = await fetch(`/api/action/verify?project=${encodeURIComponent(projectId)}`);
+      const res = await fetch(`/api/action/verify?project=${encodeURIComponent(projectId)}&probe=${encodeURIComponent(popItem.probe || "")}`);
       if (res.ok) {
         const data = await res.json().catch(() => null);
         verified = data?.verified === true;
@@ -969,6 +1308,11 @@ export function renderChat(root, projectId) {
   function settleActionPop() {
     popWatching = false;
     popPhase = "connected";
+    // the tier bodies hand the popup back to the one-row renderer, which is
+    // where the connected state is drawn (the [data-action-pop] phase the
+    // product's own gates read)
+    popMode = "row";
+    popKey = "";
     paintActionPop();
     const it = popItem?.item;
     if (it) {
@@ -995,6 +1339,8 @@ export function renderChat(root, projectId) {
     popItem = null;
     popPhase = "connect";
     popReason = "";
+    popMode = "row";
+    popKey = "";
     paintActionPop();
   }
 

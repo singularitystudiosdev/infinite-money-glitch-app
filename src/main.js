@@ -9,13 +9,14 @@ import { addCredits, get, markAllRead, setSide } from "./store.js";
 import { reduceMotion } from "./util.js";
 import * as activity from "./ui/activity.js";
 import { confetti } from "./ui/confetti.js";
+import * as demos from "./ui/demos.js";
 import { shortcutsDialog } from "./ui/dialog.js";
 import * as home from "./ui/home.js";
 import { openPalette, setPaletteActions } from "./ui/palette.js";
 import * as project from "./ui/project.js";
 import * as settings from "./ui/settings.js";
 
-const PAGES = { home, project, settings, activity };
+const PAGES = { home, project, settings, activity, demos };
 const view = document.getElementById("view");
 let cleanup = () => {};
 
@@ -45,7 +46,7 @@ function show(route) {
     // the demo route makes its project fresh, renders it like any other,
     // then plays its script over the page
     const isDemo = demo.matches(route);
-    if (isDemo) demo.prepare();
+    if (isDemo) demo.prepare(route);
     const pageCleanup = (PAGES[route.page]?.render || missing)(view, route.params) || (() => {});
     cleanup = () => {
       demo.stop();
@@ -114,6 +115,7 @@ document.addEventListener("keydown", (e) => {
 document.documentElement.dataset.theme = "light";
 setPaletteActions({
   search: openPalette,
+  demos: () => navigate("/demos"),
   settings: () => navigate("/settings/credits"),
   shortcuts: shortcutsDialog,
   newProject: home.startNewProject,

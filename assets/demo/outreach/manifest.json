@@ -1,0 +1,78 @@
+{
+  "project": "cold email outreach for a web design agency (Northlight Studio), 30 emails a day",
+  "script": "src/demo/scripts/outreach.js",
+  "route": "#/p/outreach",
+  "capturedAt": null,
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "note": "NOTHING IS CAPTURED YET. This file is the provenance plan for the four shots src/demo/scripts/outreach.js names, written so whoever holds capture tooling can land them at the exact paths the script already reads. Every file here must be a real capture of the real service, taken headless at 1280x800, the way assets/demo/manifest.json records the climbing goal's shots. No drawn, mocked or synthetic image may go in this folder: an absent shot is skipped by run.js (preload/has in demo/run.js:622-643) and the demo still plays, a fabricated one is a gate failure (P16 G3). Nothing was captured in the session that wrote the script: playwright's chromium cannot start under the seatbelt sandbox (mach_port_rendezvous, Permission denied 1100), the shared scraper browser was busy, and this item's owns are src/demo/scripts/outreach.js and assets/demo/outreach/** only.",
+  "screenshots": [],
+  "pending": [
+    {
+      "file": "mailbox.png",
+      "shotIn": "work[0] (verify_mailbox)",
+      "caption": "Gmail: the mailbox every send comes out of",
+      "url": "https://mail.google.com/mail/u/0/#inbox",
+      "shows": "the signed-in studio mailbox (sara@northlight.studio) after the probe to self",
+      "blocked": "needs an authenticated Gmail session"
+    },
+    {
+      "file": "dns-panel.png",
+      "shotIn": "media[1] (create_dns_record)",
+      "caption": "The DNS panel: SPF, DKIM and DMARC on northlight.studio",
+      "url": "https://dash.cloudflare.com/ (DNS > Records), or https://resend.com/domains for the records Resend hands back",
+      "shows": "the three records the tool card publishes: MX send.northlight.studio, TXT send (v=spf1 include:amazonses.com ~all), CNAME resend._domainkey, then TXT _dmarc",
+      "blocked": "needs an authenticated Cloudflare or Resend session; the public fallback that reads as the same panel is https://developers.cloudflare.com/dns/manage-dns-records/how-to/email-records/ (Cloudflare's own page for exactly these records)",
+      "gate": "P16 G9"
+    },
+    {
+      "file": "warmup.png",
+      "shotIn": "voice (start_warmup)",
+      "caption": "The warm-up curve: 10 a day to 30, one step a day",
+      "url": "the sending tool's domain page after 7 days of warm-up (Resend > Domains, or the warm-up chart of whichever warmer the platform runs)",
+      "shows": "the daily volume ramp 10, 14, 20, 24, 26, 28, 30 with deliverability held above 98%",
+      "blocked": "needs the sending tool's own session once a real warm-up has run",
+      "gate": "P16 G9"
+    },
+    {
+      "file": "first-reply.png",
+      "shotIn": "not placeable in the current contract",
+      "caption": "The first reply: \"What would a rebuild run us?\"",
+      "url": "https://mail.google.com/mail/u/0/#inbox",
+      "shows": "Dana Whitfield's reply, 31 hours after the first batch",
+      "blocked": "run.js only accepts a shot on work[], media[] and voice (demo/run.js:446,457,465); the reply lands in the week, which has no shot slot. The beat is carried by the read_inbox tool card and its note on week day 2 instead."
+    },
+    {
+      "file": "booked-call.png",
+      "shotIn": "not placeable in the current contract",
+      "caption": "The first call on the calendar",
+      "url": "https://cal.com/ (the booking page the reply links to)",
+      "shows": "Thursday 14:00 with Dana Whitfield, booked five minutes after the price went out",
+      "blocked": "same as above: the week has no shot slot. Carried by the read_calendar tool card on week day 3."
+    }
+  ],
+  "video": {
+    "file": "first-send.webm",
+    "shownIn": "the in-app browser window when the first batch card is clicked (demo/run.js:488-490)",
+    "seconds": 6,
+    "url": "https://mail.google.com/mail/u/0/#sent",
+    "shows": "the first batch leaving the mailbox: 10 sent at 09:00",
+    "blocked": "not recorded. Until this file exists, run.js falls through to the hardcoded YouTube embed of videos[0].id (demo/run.js:490), which for this goal is not a video at all."
+  },
+  "audio": {
+    "file": "warmup.m4a",
+    "shownIn": "the warm-up milestone card (demo/run.js:199-203)",
+    "says": "Warm-up day one. Ten sent, none bounced, no complaints. Four more a day to a ceiling of thirty, and it pauses itself under 98% delivered.",
+    "blocked": "not recorded. macOS say exits 0 but writes a 4096-byte header-only aiff in this sandbox, and afconvert 2.0 here has no aac or alac data format; there is no TTS key in the tree. Until this file exists the milestone's audio element 404s."
+  },
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:46:20.512Z",
+    "captured": [],
+    "blocked": [],
+    "skipped": []
+  },
+  "files": []
+}

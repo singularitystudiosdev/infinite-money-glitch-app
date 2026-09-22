@@ -65,7 +65,7 @@ function idle(problem = "") {
 async function start() {
   hide();
   try {
-    const r = await fetch("/api/demo/record", { method: "POST" });
+    const r = await fetch(`/api/demo/record?route=${encodeURIComponent(location.hash.replace(/^#/, "") || "/")}`, { method: "POST" });
     if (!r.ok) throw new Error(`server said ${r.status}`);
     const job = await r.json();
     watch(job.id);

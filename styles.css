@@ -81,6 +81,12 @@
   --color-surface: var(--hex-surface);
   --color-ink: var(--hex-ink);
   --color-text-secondary: var(--hex-muted);
+  /* app.css asked for this nine times and it was defined nowhere, so those
+     rules were invalid at computed-value time and the text silently INHERITED
+     instead of rendering quiet. It is the secondary slot's value, not the
+     quaternary one: quaternary on canvas measures ~1.9:1, which would trade a
+     silent bug for a contrast one. */
+  --color-text-quiet: var(--color-text-secondary);
   --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 55%, var(--hex-canvas));
   --color-hairline: var(--hex-hairline);
   --color-hairline-strong: color-mix(in oklab, var(--hex-hairline) 60%, var(--hex-muted));
@@ -106,6 +112,7 @@
   --color-surface: color-mix(in oklab, var(--hex-ink) 88%, var(--hex-surface));
   --color-ink: var(--hex-canvas);
   --color-text-secondary: color-mix(in oklab, var(--hex-canvas) 60%, var(--hex-muted));
+  --color-text-quiet: var(--color-text-secondary);
   --color-text-quaternary: color-mix(in oklab, var(--hex-muted) 70%, var(--hex-ink));
   --color-hairline: color-mix(in oklab, var(--hex-ink) 76%, var(--hex-surface));
   --color-hairline-strong: color-mix(in oklab, var(--hex-ink) 55%, var(--hex-surface));

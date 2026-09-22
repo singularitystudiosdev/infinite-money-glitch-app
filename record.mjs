@@ -15,12 +15,26 @@
 // stdout: one JSON line per phase ({ phase }), then { done, file, seconds }
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
-import { mkdir, rename, rm, stat } from "node:fs/promises";
+import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { appendFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => (a.startsWith("--") ? [a.slice(2), all[i + 1]] : [])).filter((x) => x.length));
+// --shoot name:selector,name:selector — one demo frame per scene, written as
+// <out>/<name>.png the first time its selector is on the page. This is how the
+// P13 parity gate compares the live page against the demo at the SAME beat
+// rather than at the same wall-clock second: both paths draw the same card
+// classes, so the same markers name the same scenes on either one.
+const SHOOT = String(args.shoot || "")
+  .split(",")
+  .map((pair) => pair.split(":"))
+  .filter((p) => p.length === 2 && p[0] && p[1])
+  .map(([name, selector]) => ({ name, selector, taken: null, masks: null }));
+// what a scene comparison hides on each side before it counts pixels: the
+// thumbnails (which are different pictures by design) and the timestamps (which
+// are different by definition). Everything else is compared.
+const MASK_SELECTOR = args.mask || "img,[data-demo-speed],.c-tool__ms";
 const url = args.url;
 const out = args.out;
 if (!url || !out) {
@@ -205,7 +219,20 @@ for (;;) {
     });
     if (box?.w > 0) clip = clip ? { ...clip, ...box, to: frames } : { ...box, from: frames, to: frames };
   }
-  await write(await shot());
+  const buf = await shot();
+  await write(buf);
+  for (const s of SHOOT) {
+    if (s.taken !== null) continue;
+    if (await page.evaluate((sel) => Boolean(document.querySelector(sel)), s.selector)) {
+      s.taken = frames;
+      await writeFile(join(out, `${s.name}.png`), buf);
+      s.masks = await page.evaluate((sel) => [...document.querySelectorAll(sel)].map((el) => {
+        const r = el.getBoundingClientRect();
+        return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+      }).filter((r) => r.w > 0 && r.h > 0), MASK_SELECTOR);
+      say({ phase: `scene ${s.name} at ${(frames / FPS).toFixed(2)} s` });
+    }
+  }
   frames++;
   if (frames % (FPS * 5) === 0) say({ phase: `recording the run (${Math.round(frames / FPS)} s)` });
   if (tail === null && (await signedOff())) tail = frames + Math.round(TAIL_S * FPS);
@@ -250,4 +277,11 @@ if (clip) {
 
 const seconds = frames / FPS;
 const bytes = (await stat(mp4)).size;
-say({ done: true, file: mp4, seconds, bytes, frames, fps: FPS, clip, errors: errors.length });
+// the scene frames and where they landed, so a gate can pair them with the
+// live page's own beat
+const scenes = SHOOT.filter((s) => s.taken !== null).map((s) => ({ name: s.name, selector: s.selector, frame: s.taken, seconds: s.taken / FPS, masks: s.masks || [] }));
+// the chat column's own rect, so a gate can diff that column alone
+let chat = null;
+try { chat = await page.evaluate(() => { const el = document.querySelector("[data-chat]"); if (!el) return null; const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; }); } catch { chat = null; }
+if (SHOOT.length) await writeFile(join(out, "scenes.json"), JSON.stringify({ fps: FPS, size, chat, scenes, maskSelector: MASK_SELECTOR, missed: SHOOT.filter((s) => s.taken === null).map((s) => s.name) }, null, 2));
+say({ done: true, file: mp4, seconds, bytes, frames, fps: FPS, clip, scenes: scenes.length, errors: errors.length });

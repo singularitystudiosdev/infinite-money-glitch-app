@@ -1,0 +1,203 @@
+{
+  "demo": "shopify-store",
+  "goal": "Keep my Shopify store's inventory updated from my supplier's CSV and answer customer emails",
+  "route": "#/p/shopify-store",
+  "script": "src/demo/scripts/shopify.js",
+  "shop": "kestrel-supply.myshopify.com",
+  "capturedAt": "TBD — each entry carries its own capture time, stamped when the capture item takes it",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "note": "NOTHING IS CAPTURED YET. Every screenshot below is a surface the goal really touches: the store's own admin (products, inventory, orders) on the tenant host the merchant connected, the mailbox the customer email arrived in, and the storefront the sold-out cam now reads on. No drawn, mocked or synthetic image may go in this folder: an absent shot is skipped by the player (preload/has, demo/run.js:634-655) and the demo still plays, a fabricated one is a gate failure (P16 G3). Two kinds of source are flagged here: the ones behind a sign-in (the Shopify admin, Gmail) need an authenticated session, and two files — the supplier's CSV and the recurring sync — have no third-party page at all, because they are the goal's own workspace file and the platform's own schedule; those two are recorded with a null url and capture.mjs skips them rather than photographing a login page. WARNING for whoever runs assets/demo/capture.mjs: it keeps the file when a page answers with a sign-in wall, and gate P16 G3 counts any image on disk that is not in manifest.capture.captured as unaccounted (test/gates/p16.gates.mjs:249-255). Capture only the urls that answer as the real screen, and delete a wall shot rather than leave it counted. The five product photos under thumbs/ are the platform's own generated product shots ($0.04 each, fal.ai nano-banana-2), listed at the bottom.",
+  "screenshots": [
+    {
+      "file": "supplier-csv.png",
+      "url": null,
+      "title": "supplier.csv: five rows, sku and quantity, the warehouse's own count of the shelf",
+      "shows": "the file the goal syncs from, as the goal's workspace holds it: sku,quantity with WHIPPER-1 24, KILT-2 12, CAM-3 0, RIPCORD-4 7, CHALK-5 50",
+      "usedBy": "work[0].shot",
+      "capturedAt": "TBD",
+      "blocked": "the source is the goal's own attached workspace file, not a page: capture it from the app's workspace view once the goal's run is on the public host, or from the supplier's export as the merchant received it"
+    },
+    {
+      "file": "shopify-admin-products.png",
+      "url": "https://admin.shopify.com/store/kestrel-supply/products",
+      "title": "Shopify admin, Products: the five SKUs with the counts the store held before the sync",
+      "shows": "WHIPPER-1 11, KILT-2 12, CAM-3 9, RIPCORD-4 3, CHALK-5 50 — three of them disagreeing with the file",
+      "usedBy": "work[1].shot",
+      "capturedAt": "2026-09-22T08:46:24.122Z",
+      "blocked": "needs an authenticated session on the development store (OAuth 2, per-store app); the admin answers a sign-in page without one",
+      "httpStatus": 200
+    },
+    {
+      "file": "sync-diff.png",
+      "url": "https://admin.shopify.com/store/kestrel-supply/products/inventory",
+      "title": "Inventory: the adjustments the sync wrote, with the reason 'supplier sync (supplier.csv)'",
+      "shows": "the three deltas the work[2] card reads out — WHIPPER-1 11 to 24, RIPCORD-4 3 to 7, CAM-3 9 to 0 — and the two rows it did not touch",
+      "usedBy": "work[2].shot",
+      "capturedAt": "2026-09-22T08:46:27.182Z",
+      "blocked": "same store session; this is the CSV diff as the store itself records it (inventoryAdjustmentGroup, reason supplier sync)",
+      "httpStatus": 200
+    },
+    {
+      "file": "order-admin.png",
+      "url": "https://admin.shopify.com/store/kestrel-supply/orders",
+      "title": "Orders: #1042, one cam, $84.00, paid 08:12 — the order the wrong count took",
+      "shows": "the first order of the morning and the four after it, newest first",
+      "usedBy": "media[0].shot",
+      "capturedAt": "2026-09-22T08:46:30.229Z",
+      "blocked": "same store session",
+      "httpStatus": 200
+    },
+    {
+      "file": "customer-email.png",
+      "url": "https://mail.google.com/mail/u/0/#inbox",
+      "title": "Gmail: the customer asking whether the cam ships this week, 08:19",
+      "shows": "the unread email the sold-out variant drew, in the mailbox the goal connects",
+      "usedBy": "media[1].shot",
+      "capturedAt": "TBD",
+      "blocked": "needs the connected mailbox's session"
+    },
+    {
+      "file": "customer-reply.png",
+      "url": "https://mail.google.com/mail/u/0/#sent",
+      "title": "The answer, in the same thread: the cam is out, $84 refunded, the harness ships today",
+      "shows": "the reply the goal sends, sent from orders@kestrel-supply.com in the thread the customer wrote in",
+      "usedBy": "media[2].shot",
+      "capturedAt": "TBD",
+      "blocked": "needs the connected mailbox's session"
+    },
+    {
+      "file": "stock-levels.png",
+      "url": "https://admin.shopify.com/store/kestrel-supply/products?sort=inventory",
+      "title": "Inventory after the sync: CAM-3 at 0, RIPCORD-4 7, KILT-2 12, WHIPPER-1 24, CHALK-5 50",
+      "shows": "the store read back against the file: one variant at zero, none below the low-stock line of five",
+      "usedBy": "media[3].shot",
+      "capturedAt": "2026-09-22T08:46:39.474Z",
+      "blocked": "same store session",
+      "httpStatus": 200
+    },
+    {
+      "file": "storefront-soldout.png",
+      "url": "https://kestrel-supply.myshopify.com/products/cam-3",
+      "title": "The storefront, cam-3: Sold out",
+      "shows": "what the zero write did to the buyer-facing page, which is the point of the sync",
+      "usedBy": "not placeable in the current contract",
+      "capturedAt": "TBD",
+      "blocked": "the storefront is public, so this one needs no session — it needs the store to exist at that host first",
+      "note": "the contract puts a shot on work[], media[] and voice only (demo/run.js:446,457,465); the storefront is the same write as media[3], so this is a second capture of the same beat rather than a beat of its own"
+    },
+    {
+      "file": "sync-scheduled.png",
+      "url": null,
+      "title": "The sync on the schedule: supplier.csv at 07:00, 12:30 and 17:00",
+      "shows": "the recurring job the voice beat starts, and the hold it carries for a file that gains a column",
+      "usedBy": "voice.shot",
+      "capturedAt": "TBD",
+      "blocked": "the schedule is the platform's own recurring job, not a third-party page: capture it from the goal's own run (the dock's Asks/Schedule view) once the live mission exists, or from the scheduler's job list"
+    }
+  ],
+  "clip": {
+    "file": "first-sync.webm",
+    "seconds": 6,
+    "url": "https://admin.shopify.com/store/kestrel-supply/products/inventory",
+    "title": "The 07:00 sync: the diff filling in row by row, then the three writes landing",
+    "shows": "what the in-app browser window plays when the first sync card is opened (run.js:497-525); until the clip exists the window frames the first variant's own product page instead",
+    "capturedAt": "TBD"
+  },
+  "voice": {
+    "file": "sync.m4a",
+    "seconds": 14,
+    "url": null,
+    "title": "The sync note",
+    "text": "The supplier's file is read three times a day, at seven, at half past twelve, and at five. Nothing is written until the difference is on screen: what the store holds, what the warehouse says, and what will change. A row that already agrees is left alone, and a column the file has never had stops the run instead of renumbering the shelf.",
+    "capturedAt": "TBD",
+    "blocked": "not recorded: no TTS is reachable from this tree (macOS say writes a header-only file in the sandbox, and there is no ElevenLabs key). Until it exists the milestone's audio element 404s, the same as the outreach demo's warm-up note"
+  },
+  "thumbs": [
+    {
+      "file": "thumbs/whipper-harness.jpg",
+      "sku": "WHIPPER-1",
+      "title": "Whipper harness, blue",
+      "product": "https://kestrel-supply.myshopify.com/products/whipper-harness",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/kilt-chalk-bag.jpg",
+      "sku": "KILT-2",
+      "title": "Kilt chalk bag",
+      "product": "https://kestrel-supply.myshopify.com/products/kilt-chalk-bag",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/cam-3.jpg",
+      "sku": "CAM-3",
+      "title": "Cam 3, black",
+      "product": "https://kestrel-supply.myshopify.com/products/cam-3",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/ripcord-4.jpg",
+      "sku": "RIPCORD-4",
+      "title": "Ripcord 4, orange",
+      "product": "https://kestrel-supply.myshopify.com/products/ripcord-4",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    },
+    {
+      "file": "thumbs/chalk-100g.jpg",
+      "sku": "CHALK-5",
+      "title": "Chalk, 100 g block",
+      "product": "https://kestrel-supply.myshopify.com/products/chalk-100g",
+      "source": "fal.ai nano-banana-2 (image_generation, $0.04)",
+      "capturedAt": "TBD"
+    }
+  ],
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:46:42.499Z",
+    "captured": [
+      "shopify-admin-products.png",
+      "sync-diff.png",
+      "order-admin.png",
+      "stock-levels.png"
+    ],
+    "blocked": [
+      {
+        "file": "customer-email.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "customer-reply.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "storefront-soldout.png",
+        "why": "sign-in wall"
+      }
+    ],
+    "skipped": [
+      {
+        "file": "supplier-csv.png",
+        "why": "no source url"
+      },
+      {
+        "file": "sync-scheduled.png",
+        "why": "no source url"
+      }
+    ]
+  },
+  "files": [
+    "customer-email.png",
+    "customer-reply.png",
+    "order-admin.png",
+    "shopify-admin-products.png",
+    "stock-levels.png",
+    "storefront-soldout.png",
+    "sync-diff.png"
+  ]
+}

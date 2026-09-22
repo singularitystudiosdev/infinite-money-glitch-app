@@ -1,0 +1,109 @@
+{
+  "demo": "meme-posts",
+  "goal": "an X account that posts memes remade with AI from the day's news, three a day",
+  "capturedAt": "2026-09-22",
+  "capturedBy": "the scraper's own headless browser (mcp__scraper__scrape, screenshot: true), full-resolution PNG, 1 render at a time",
+  "screenshots": [
+    {
+      "file": "templates.png",
+      "url": "https://imgflip.com/memetemplates",
+      "title": "Meme Templates — Imgflip",
+      "shows": "the template library the pick comes from: the top templates of the last 30 days, each with its Add Caption button",
+      "capturedAt": "2026-09-22 (session capture)",
+      "usedBy": "work[2] browse_templates"
+    },
+    {
+      "file": "template-chosen.png",
+      "url": "https://imgflip.com/memegenerator/Drake-Hotline-Bling",
+      "title": "Drake Hotline Bling Meme Generator — Imgflip",
+      "shows": "the chosen template loaded in the generator: the template row, the two caption fields and Generate Meme",
+      "capturedAt": "2026-09-22 (session capture)",
+      "usedBy": "work[3] pick_template"
+    }
+  ],
+  "notCaptured": [
+    {
+      "file": "news-article.png",
+      "wanted": "https://www.upi.com/Odd_News/2026/08/24/kinkajou-North-Richland-Hills-Texas/2231787593692/",
+      "why": "live fetch landed on a Wayback memento and returned text only; the retry could not start inside the shared browser's budget",
+      "effect": "the shot card is skipped at play (run.js assets.has) — the story's words and its Aug. 24 date are still in the tool card"
+    },
+    {
+      "file": "regenerate.png",
+      "wanted": "https://fal.ai/models/fal-ai/nano-banana",
+      "why": "the render timed out at the 20 s scrape ceiling",
+      "effect": "skipped at play"
+    },
+    {
+      "file": "post-audio.png",
+      "wanted": "https://x.com/compose/post",
+      "why": "never attempted after the two above exhausted the browser budget",
+      "effect": "skipped at play"
+    }
+  ],
+  "products": [
+    {
+      "file": "thumbs/m01.jpg",
+      "source": "https://i.imgflip.com/30b1gx.jpg",
+      "shows": "Drake Hotline Bling, the template the first post was remade from"
+    },
+    {
+      "file": "thumbs/m02.jpg",
+      "source": "https://i.imgflip.com/3lmzyx.jpg",
+      "shows": "UNO Draw 25 Cards"
+    },
+    {
+      "file": "thumbs/m03.jpg",
+      "source": "https://i.imgflip.com/1ur9b0.jpg",
+      "shows": "Distracted Boyfriend"
+    },
+    {
+      "file": "thumbs/m04.jpg",
+      "source": "https://i.imgflip.com/22bdq6.jpg",
+      "shows": "Left Exit 12 Off Ramp"
+    },
+    {
+      "file": "thumbs/m05.jpg",
+      "source": "https://i.imgflip.com/1g8my4.jpg",
+      "shows": "Two Buttons"
+    },
+    {
+      "file": "thumbs/m06.jpg",
+      "source": "https://i.imgflip.com/3oevdk.jpg",
+      "shows": "Bernie I Am Once Again Asking For Your Support"
+    },
+    {
+      "file": "generated.mp4",
+      "built": "ffmpeg, 6.0 s, 1080x1080 h264, a slow zoom over thumbs/m01.jpg",
+      "shows": "the clip the demo's browser window plays when the first post's card is opened"
+    },
+    {
+      "file": "sting.wav",
+      "built": "ffmpeg, two sine tones, 1.2 s",
+      "shows": "the post's own sound, the milestone's audio artifact"
+    }
+  ],
+  "note": "The six images are imgflip's own template files (imgflip API get_memes, fetched 2026-09-22) and stand in for the posts' media: the demo account's own posts do not exist, so the post permalinks in memes.js are the demo's fiction and 404 outside it. Everything else in this folder is a real capture or a real remote file.",
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:13:43.005Z",
+    "captured": [
+      "templates.png",
+      "template-chosen.png"
+    ],
+    "blocked": [],
+    "skipped": []
+  },
+  "files": [
+    "generated.mp4",
+    "sting.wav",
+    "template-chosen.png",
+    "templates.png",
+    "thumbs/m01.jpg",
+    "thumbs/m02.jpg",
+    "thumbs/m03.jpg",
+    "thumbs/m04.jpg",
+    "thumbs/m05.jpg",
+    "thumbs/m06.jpg"
+  ]
+}

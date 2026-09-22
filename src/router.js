@@ -1,9 +1,10 @@
 // router.js: hash routes, so the app works from any static host with no
-// server rewrite. #/ is home, #/p/<id> a project, #/settings/<section>,
-// #/activity the whole notification log.
+// server rewrite. #/ is home, #/p/<id> a project, #/demos the demo list,
+// #/settings/<section>, #/activity the whole notification log.
 const ROUTES = [
   { pattern: /^\/?$/, page: "home" },
   { pattern: /^\/p\/([^/]+)\/?$/, page: "project", params: ["id"] },
+  { pattern: /^\/demos\/?$/, page: "demos" },
   { pattern: /^\/settings(?:\/([a-z]+))?\/?$/, page: "settings", params: ["section"] },
   { pattern: /^\/activity\/?$/, page: "activity" },
 ];

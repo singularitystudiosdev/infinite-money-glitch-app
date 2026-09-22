@@ -92,10 +92,10 @@ export function createPlayer() {
   browser.hidden = true;
   browser.innerHTML = `<div class="demo-browser__bar"><span class="demo-browser__dots"><i></i><i></i><i></i></span><button type="button" class="demo-browser__back" data-demo-back aria-label="Back to the app"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M19 12H5"/></svg></button><span class="demo-browser__url" data-demo-url></span></div><div class="demo-browser__page" data-demo-page></div>`;
   document.body.append(browser);
-  // a real page in a frame: YouTube's own embed for a video, so the link
-  // the agent posted is seen to lead somewhere real
-  // a local clip plays as the page itself (the generated video); with no
-  // clip, YouTube's own embed of the linked video stands in
+  // a real page in a frame: the service's own embed for the artifact, so the
+  // link the agent posted is seen to lead somewhere real
+  // a local clip plays as the page itself (the generated file); with no
+  // clip, the service's own embed of the linked artifact stands in
   async function openBrowser({ url, embed, video }) {
     browser.querySelector("[data-demo-url]").textContent = url.replace(/^https?:\/\/(www\.)?/, "");
     const page = browser.querySelector("[data-demo-page]");

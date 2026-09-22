@@ -53,12 +53,34 @@ const tileValue = (p, t) => (t.id === "revenue" ? p.revenue : t.id === "adSpend"
 // for a project whose prediction has not landed yet
 function kpiTiles(p) {
   const bag = (p.counters && p.counters.kpi) || {};
-  return ((p.kpis && p.kpis.list) || []).slice(0, 3).map((k) => ({ id: k.id, label: k.label, format: formats[k.format] ? k.format : "num", values: [bag[k.id] || 0], delta: null }));
+  const list = (p.kpis && p.kpis.list) || [];
+  // the ONE kpi the server keeps a daily series for (the first one backed by a
+  // connector metric). It is drawn from its own 14 days and 30 before, and its
+  // pill is the change over that window; the others are single numbers.
+  const primary = list.find((k) => k.source && k.source.kind === "metric" && Array.isArray(p.users) && p.users.length);
+  return list.slice(0, 3).map((k) => {
+    const series = primary && k.id === primary.id;
+    return {
+      id: k.id,
+      label: k.label,
+      format: formats[k.format] ? k.format : "num",
+      values: series ? p.users : [bag[k.id] || 0],
+      delta: series ? pct30(p, p.users.length - 1) : null,
+      deltaLabel: series ? "over the past 30 days" : undefined,
+    };
+  });
 }
 
 function liveMetrics(p) {
   const predicted = kpiTiles(p);
   if (predicted.length) return predicted;
+  // no prediction yet, but the connectors are already reporting: show THEIR
+  // numbers, under the labels the server sent with them. This is the rail a
+  // goal has between connecting its first account and agreeing its plan.
+  const declared = Object.values(p.metricTiles || {}).filter((t) => Number.isFinite(Number(p.stats?.[t.id])));
+  if (declared.length) {
+    return declared.slice(0, 4).map((t) => ({ id: t.id, label: t.label, format: formats[t.format] ? t.format : "num", values: [Number(p.stats[t.id])], delta: null }));
+  }
   const days = 14;
   const now = Date.now();
   const buckets = Array.from({ length: days }, () => 0);
@@ -160,13 +182,18 @@ const smallMarkup = (m) => `<button type="button" class="c-stat panel app-tile" 
 
 export function renderRunning(root, projectId) {
   const p = () => project(projectId);
-  let big = "series";
+  // the id of the metric on the big card. It was the literal "series", which
+  // no longer names anything the moment the tiles come from the goal's own
+  // KPIs: the card drew list[0] while `big` still said "series", so a change to
+  // the metric it was actually showing never redrew the graph.
+  let big = null;
   let hoverIndex = -1;
   let graph = null;
   const metric = (id) => metricsOf(p()).find((m) => m.id === id);
 
   function paint() {
     const list = metricsOf(p());
+    if (!big || !list.some((m) => m.id === big)) big = list[0]?.id ?? null;
     const bigMetric = list.find((m) => m.id === big) || list[0];
     const small = list.filter((m) => m.id !== bigMetric.id);
     root.innerHTML = `<div class="app-running">${bigMarkup(bigMetric)}<div class="app-stats${small.length === 3 || small.length >= 5 ? " app-stats--three" : ""}">${small.map(smallMarkup).join("")}</div></div>`;
@@ -319,7 +346,9 @@ export function renderRunning(root, projectId) {
   const off = subscribe((topic, payload) => {
     if (!root.isConnected) return;
     if (topic === "revenue" && payload.id === projectId) refresh("revenue");
-    else if (topic === "users" && payload.id === projectId) refresh("series");
+    // the series that moved belongs to the KPI on the big card: redraw THAT,
+    // not an id that no longer exists
+    else if (topic === "users" && payload.id === projectId) refresh(big);
     else if (topic === "stats" && payload.project.id === projectId) refresh(payload.tile);
   });
   return () => off();

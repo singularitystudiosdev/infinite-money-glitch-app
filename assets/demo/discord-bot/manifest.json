@@ -1,0 +1,172 @@
+{
+  "generated": "2026-09-22 (authoring pass: the capture pass could not run here — see pending and capture)",
+  "topic": "a Discord bot in one guild: a welcome on join, repeated invites out, and a 09:00 digest",
+  "guild": {
+    "name": "Sunset Founders",
+    "bot": "Lobby",
+    "channels": [
+      "#general",
+      "#introductions",
+      "#mod-log"
+    ]
+  },
+  "screenshots": [
+    {
+      "file": "portal-quickstart.png",
+      "url": "https://discord.com/developers/docs/quick-start/getting-started",
+      "title": "Discord Developer Portal: creating the application and its bot user",
+      "status": "pending",
+      "capturedAt": "2026-09-22T08:12:53.091Z",
+      "httpStatus": 200
+    },
+    {
+      "file": "bot-commands.png",
+      "url": "https://discord.com/developers/docs/interactions/application-commands",
+      "title": "Discord Developer Portal: application commands, the /hello the bot registers",
+      "status": "pending",
+      "capturedAt": "2026-09-22T08:12:56.198Z",
+      "httpStatus": 200
+    },
+    {
+      "file": "guild-install.png",
+      "url": "https://discord.com/oauth2/authorize?client_id=<app id>&permissions=76800&scope=bot%20applications.commands",
+      "title": "Discord: the authorize screen that installs the bot in the guild",
+      "status": "pending"
+    },
+    {
+      "file": "guild-command.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "title": "Discord: #general, /hello answered by the bot",
+      "status": "pending"
+    },
+    {
+      "file": "guild-welcome.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "title": "Discord: #general, the first welcome the bot posted to a new member",
+      "status": "pending"
+    },
+    {
+      "file": "guild-spam.png",
+      "url": "https://discord.com/channels/<guild id>/<mod-log channel id>",
+      "title": "Discord: the spam the rule removed and the mod-log line it left",
+      "status": "pending"
+    },
+    {
+      "file": "guild-digest.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "title": "Discord: #general, the first 09:00 digest the bot posted",
+      "status": "pending"
+    }
+  ],
+  "clips": [
+    {
+      "file": "guild-command.mp4",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "title": "Discord: the bot answering /hello in the guild",
+      "seconds": 9,
+      "status": "pending"
+    }
+  ],
+  "voice": {
+    "file": "digest-voice.m4a",
+    "seconds": 17.4,
+    "text": "Sunset Founders, day one. Six joined, five of them on the Thursday meetup invitation. The job board got its first post. Two links came out of general and two authors were warned once. The thread worth reading is the meetup, now forty replies long.",
+    "status": "pending"
+  },
+  "pending": [
+    {
+      "file": "portal-quickstart.png",
+      "url": "https://discord.com/developers/docs/quick-start/getting-started",
+      "shows": "the developer portal's quick start",
+      "why": "the capture pass could not run in this session: chromium cannot launch under the seatbelt sandbox (bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer: Permission denied (1100))"
+    },
+    {
+      "file": "bot-commands.png",
+      "url": "https://discord.com/developers/docs/interactions/application-commands",
+      "shows": "the application-commands documentation",
+      "why": "same sandbox block"
+    },
+    {
+      "file": "guild-install.png",
+      "url": "https://discord.com/oauth2/authorize?client_id=<app id>&permissions=76800&scope=bot%20applications.commands",
+      "shows": "Discord's own authorize screen for the bot",
+      "why": "needs an app id and a signed-in Discord session"
+    },
+    {
+      "file": "guild-command.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "shows": "/hello answered in #general",
+      "why": "needs a signed-in Discord session and a guild the bot is installed in"
+    },
+    {
+      "file": "guild-welcome.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "shows": "the first welcome the bot posted",
+      "why": "needs a signed-in Discord session and a real join"
+    },
+    {
+      "file": "guild-spam.png",
+      "url": "https://discord.com/channels/<guild id>/<mod-log channel id>",
+      "shows": "the removed spam and the mod-log line",
+      "why": "needs a signed-in Discord session and a real removal"
+    },
+    {
+      "file": "guild-digest.png",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "shows": "the first 09:00 digest",
+      "why": "needs a signed-in Discord session and a day of the real server"
+    },
+    {
+      "file": "guild-command.mp4",
+      "url": "https://discord.com/channels/<guild id>/<general channel id>",
+      "shows": "the bot answering /hello, recorded",
+      "why": "needs a signed-in Discord session; the demo's browser window falls back to the player's YouTube embed until this file exists"
+    },
+    {
+      "file": "digest-voice.m4a",
+      "url": "local text-to-speech",
+      "shows": "the 44-word digest read aloud",
+      "why": "macOS say writes 0 audio bytes under the seatbelt sandbox; run capture.mjs from a normal shell and it is produced"
+    }
+  ],
+  "capture": {
+    "tool": "assets/demo/capture.mjs",
+    "capturedAt": "2026-09-22T08:13:14.625Z",
+    "captured": [
+      "portal-quickstart.png",
+      "bot-commands.png"
+    ],
+    "blocked": [
+      {
+        "file": "guild-install.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "guild-command.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "guild-welcome.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "guild-spam.png",
+        "why": "sign-in wall"
+      },
+      {
+        "file": "guild-digest.png",
+        "why": "sign-in wall"
+      }
+    ],
+    "skipped": []
+  },
+  "files": [
+    "bot-commands.png",
+    "guild-command.png",
+    "guild-digest.png",
+    "guild-install.png",
+    "guild-spam.png",
+    "guild-welcome.png",
+    "portal-quickstart.png"
+  ]
+}

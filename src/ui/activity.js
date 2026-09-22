@@ -7,7 +7,21 @@ import { announce, dayLabel, escapeHtml, timeOf } from "../util.js";
 import { confirmDialog } from "./dialog.js";
 import { renderDaemon } from "./daemon.js";
 
-const KIND_ICONS = { sale: "arrow-up-right", upload: "check", model: "sun-moon", system: "bell", insight: "zap", needs: "circle-help" };
+// every kind the server emits, plus the client's own: a notification whose kind
+// is missing here is not an error (icon() falls back to the bell) but it is a
+// hole, so the set is kept whole. Server: insight/sale/system/needs (the
+// telemetry bell), plug (a connect), report (the weekly), billing (a cap),
+// security (an ops finding), upload/model (the client's own pushes). The rest
+// are the metric outcomes and the sim's kinds, which arrive by the same route.
+const KIND_ICONS = {
+  insight: "zap", sale: "arrow-up-right", system: "bell", needs: "circle-help",
+  plug: "external-link", report: "file-text", billing: "credit-card", security: "shield-check",
+  upload: "check", model: "sun-moon",
+  work: "check", mission: "badge-check", breakthrough: "sparkles", setup: "shield-check", user: "user",
+  video: "clapperboard", lead: "mail", signup: "user", order: "inbox", payout: "receipt",
+  invoice: "receipt", run: "activity", error: "circle-alert", note: "file-text", send: "mail",
+  subscriber: "user", view: "eye",
+};
 const FILTERS = [["all", "All"], ["needs", "Needs you"], ["insight", "Insights"], ["sale", "Sales"], ["upload", "Done"], ["system", "System"]];
 
 function row(n) {

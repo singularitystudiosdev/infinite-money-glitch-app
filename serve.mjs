@@ -37,16 +37,24 @@ const TYPES = {
 // one job at a time: a press while a recording runs joins that recording
 const jobs = new Map();
 let running = null;
-const DEMO_URL = `http://localhost:${PORT}/#/p/new-project-hlug`;
+// the route a recording is OF: the page posts its own hash, so every demo
+// records itself instead of the flagship. Only a project route is allowed
+// through, so the address handed to the browser is never one a caller typed
+const FLAGSHIP = "/p/new-project-hlug";
+const routeOf = (url) => {
+  const r = url.searchParams.get("route") || "";
+  return /^\/p\/[a-z0-9-]+$/i.test(r) ? r : FLAGSHIP;
+};
+const demoUrl = (route) => `http://localhost:${PORT}/#${route}`;
 
-function startRecording() {
+function startRecording(route = FLAGSHIP) {
   if (running && jobs.get(running).state === "running") return jobs.get(running);
   const id = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const dir = join(ROOT, ".tmp", "recordings", id);
-  const job = { id, state: "running", phase: "starting", startedAt: Date.now() };
+  const job = { id, route, state: "running", phase: "starting", startedAt: Date.now() };
   jobs.set(id, job);
   running = id;
-  const child = spawn(process.execPath, [join(ROOT, "record.mjs"), "--url", DEMO_URL, "--out", dir], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [join(ROOT, "record.mjs"), "--url", demoUrl(route), "--out", dir], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
   let stderr = "";
   let tail = "";
   child.stderr.on("data", (d) => (stderr = (stderr + d).slice(-2000)));
@@ -81,7 +89,7 @@ const json = (res, code, body) => {
 
 async function recorderRoute(req, res, url) {
   const [, id, file] = url.pathname.match(/^\/api\/demo\/record(?:\/([\w-]+))?(?:\/([\w.-]+))?$/) || [];
-  if (!id && req.method === "POST") return json(res, 202, startRecording());
+  if (!id && req.method === "POST") return json(res, 202, startRecording(routeOf(url)));
   // the page asks here whether a recorder exists before it shows the button:
   // a static host (GitHub Pages) answers this address with a 404
   if (!id) return json(res, 200, { recorder: true, running: running && jobs.get(running).state === "running" ? running : null });

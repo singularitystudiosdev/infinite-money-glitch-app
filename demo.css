@@ -130,7 +130,9 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 .demo-quote__by.is-in {
-  opacity: 0.85;
+  /* white at 0.85 over the brand green composites to 2.83:1, under the 3:1
+     bar this 26px line needs; at full opacity it is 3.32:1 */
+  opacity: 1;
   transform: translateY(0);
 }
 
@@ -188,7 +190,12 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: var(--radius-full);
   background: transparent;
-  color: #fff;
+  /* white on --demo-brand is 3.32:1, and 2.85:1 through the 0.85 opacity this
+     pill fades in to: both are under the 4.5:1 AA bar for 14px label text.
+     Ink on the same green is 5.50:1 at full opacity, and 4.37:1 at 0.85, so
+     the label also has to arrive at opacity 1. The pill's size, shape and
+     border are untouched; only the word and its final opacity change. */
+  color: var(--color-ink);
   font: var(--type-label);
   cursor: pointer;
   opacity: 0;
@@ -196,7 +203,7 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 .demo-outro__replay.is-in {
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .demo-outro__replay:hover {
@@ -369,7 +376,8 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 /* what the agent wrote down: a pencil and one line, quiet */
-.demo-note {
+.demo-note,
+.c-note--agent {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-8);
@@ -381,14 +389,16 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   text-wrap: pretty;
 }
 
-.demo-note svg {
+.demo-note svg,
+.c-note--agent svg {
   flex: none;
   width: 14px;
   height: 14px;
   margin-top: 3px;
 }
 
-.demo-note strong {
+.demo-note strong,
+.c-note--agent strong {
   color: var(--color-ink);
   font-weight: 500;
 }
@@ -402,7 +412,8 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 /* a day mark in the montage: a chip between two hairlines */
-.demo-day {
+.demo-day,
+.c-day {
   display: flex;
   align-items: center;
   gap: var(--spacing-12);
@@ -413,7 +424,9 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 .demo-day::before,
-.demo-day::after {
+.demo-day::after,
+.c-day::before,
+.c-day::after {
   content: "";
   flex: 1;
   height: 1px;
@@ -421,7 +434,8 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
 }
 
 /* an uploaded video: its real thumbnail, the title, the link */
-.demo-video {
+.demo-video,
+.c-video {
   gap: var(--spacing-12);
   max-width: 560px;
   padding: var(--spacing-8);
@@ -431,7 +445,8 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   color: inherit;
 }
 
-.demo-video__thumb {
+.demo-video__thumb,
+.c-video__thumb {
   flex: none;
   width: 112px;
   height: 63px;
@@ -440,20 +455,23 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   background: var(--color-canvas);
 }
 
-.demo-video .c-milestone__text {
+.demo-video .c-milestone__text,
+.c-video .c-milestone__text {
   display: flex;
   align-items: center;
   gap: var(--spacing-6);
 }
 
-.demo-video__mark {
+.demo-video__mark,
+.c-video__mark {
   display: inline-grid;
   place-items: center;
   width: 14px;
   height: 14px;
 }
 
-.demo-video__mark svg {
+.demo-video__mark svg,
+.c-video__mark svg {
   width: 14px;
   height: 14px;
 }
@@ -463,31 +481,6 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   max-width: 560px;
   border: 1px solid var(--color-hairline);
   background: var(--color-surface);
-}
-
-.demo-wave {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 20px;
-  margin-left: var(--spacing-8);
-}
-
-.demo-wave i {
-  width: 2px;
-  height: 30%;
-  border-radius: 1px;
-  background: var(--color-text-secondary);
-  animation: demo-wave var(--duration-1000) ease-in-out infinite; /* deliberate: a looping wave, not a transition */
-}
-
-.demo-wave i:nth-child(3n) { animation-delay: -0.2s; height: 60%; }
-.demo-wave i:nth-child(3n + 1) { animation-delay: -0.5s; height: 90%; }
-.demo-wave i:nth-child(4n) { animation-delay: -0.8s; height: 45%; }
-
-@keyframes demo-wave {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
 }
 
 .demo-audio {
@@ -645,3 +638,8 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
     transition: none;
   }
 }
+
+/* the live path's tool card: how long the run took, and a run that errored */
+.c-tool__ms { margin-left: var(--spacing-4); font: var(--type-label); color: var(--color-text-tertiary); }
+.c-tool.is-error .c-tool__status svg { color: var(--color-danger, #d33); }
+.c-shot__url { margin-left: auto; font: var(--type-label); color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
