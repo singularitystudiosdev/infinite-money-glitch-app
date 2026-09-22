@@ -100,6 +100,29 @@ export const KINDS = {
     ],
     asks: [{ question: "Stock of the blue variant is at 6. Reorder 200 now or wait for the weekend numbers?", options: [{ label: "Reorder 200", note: "Lands in 9 days" }, { label: "Wait for Monday", note: "Risk a stock-out" }] }],
   },
+  // a site the agent builds and runs: pages, the people using them, and the
+  // game or tool at the middle of it. This is the archetype a request that
+  // names a website or a game resolves to (classify, below), where before it
+  // fell to the channel default and drew a YouTube plan.
+  site: {
+    label: "Website",
+    updates: [["deploy", "Deploys"], ["player", "Users"], ["insight", "Insights"]],
+    events: [
+      ev("deploy", "Deployed: the new page is live", "A fix went out to the sign-in page", "Preview build ready for the next change"),
+      ev("player", "{n} people signed in today", "A match finished between two new players", "{n} sessions since the morning"),
+      ev("insight", "A first game takes {n} minutes on average", "{n}% of visitors finish a first game"),
+    ],
+    hint: "A site you build and run: the pages, the people using them and the numbers they move.",
+    series: { label: "Visits", perDay: 500 },
+    tiles: [money("revenue", "Monthly revenue"), num("visitors", "Visitors this month", 0.06, [3, 12]), pct("conversion", "Sign-up conversion", 4.2, [-0.1, 0.15]), num("sessions", "Games played", 0.12, [4, 16]), num("errors", "Errors today", 0.0004, [0, 1])],
+    work: [
+      { thought: "A third of the visitors leave on the sign-in page. Reading where they drop before I touch the form.", tools: [{ name: "read_funnel", icon: "activity", args: "step: sign-in, days: 7", result: "arrive: 100%\nopen the form: 68%\nsubmit: 61%" }], say: "The form itself converts; the drop is before it. Moving [the sign-in button](https://github.com/singularitystudiosdev) above the fold and watching that step." },
+      { thought: "One page has thrown the same error forty times since yesterday. Reading the stack before I guess at the cause.", tools: [{ name: "read_errors", icon: "circle-alert", args: "since: 24h, group: message", result: "TypeError in match.js:88, 41 hits\n1 session, 1 route" }], say: "It is one bad save from a single session, not a broken route. Fixed [the guard](https://github.com/singularitystudiosdev) and replayed the request." },
+      { thought: "The new rule shipped behind a flag. Reading the two arms before I send it to everyone.", tools: [{ name: "read_experiment", icon: "compass", args: "test: rules-b, min_confidence: 0.9", result: "A (current): 54% finish a game\nB (new rule): 61%\nconfidence: 0.94" }, { name: "flip_flag", icon: "sliders-vertical", args: "flag: rules-b, to: all", result: "rolled out" }], say: "The new rule finishes more games at 94% confidence. [Flagged on for everyone](https://github.com/singularitystudiosdev)." },
+      { thought: "The core request got slower after the last change. Timing it against the previous build before I ship anything else.", tools: [{ name: "read_timings", icon: "activity", args: "route: /api/move, compare: last-build", result: "before: 42ms p95\nafter: 118ms p95" }], say: "The last change put a check on the hot path. Moved it off; [back to 45ms](https://github.com/singularitystudiosdev)." },
+    ],
+    asks: [{ question: "The new rule wins on the test but it changes how a game is scored. Ship it to everyone now?", options: [{ label: "Ship to everyone", note: "Wins on the test" }, { label: "Hold a week", note: "Watch the first cohort longer" }] }],
+  },
   ops: {
     label: "Revenue ops",
     updates: [["payout", "Payouts"], ["invoice", "Invoices"], ["insight", "Insights"]],
@@ -202,6 +225,17 @@ const PLANS = {
     step("Grow the basket", "A bundle of the two products bought together and a thank-you note with a code for the second order."),
     step("Report every Monday", "Orders, revenue, ad spend, refunds and the one change for next week."),
   ],
+  // the plan for a site request. {goal} (the person's own words) is carried in
+  // several steps, not only the first, so the card reads as a plan for what
+  // was asked rather than a title with the rest unrelated to it.
+  site: [
+    step("Write the brief for {goal}", "The pages it needs, the one job each does and the route between them; the single thing a first visitor must finish, written down before any code."),
+    step("Build the core loop of {goal}", "The main screen backed by real data, usable end to end by one person on a URL, with the shortest complete path from arrival to result."),
+    step("Make {goal} work for more than one user", "Accounts, a per-user record and the state that survives a reload; two people using it at once tested before the part ships."),
+    step("Ship every merge and watch it", "One deploy step from a green branch, errors and load time on a panel, the biggest regression fixed before the next thing is started."),
+    step("Keep the hard part honest", "One measured change a week on whichever part decides the product (matching, latency, the rules); kept only when the number moves."),
+    step("Report every Monday", "Visitors, the core action, errors and what shipped, and the one change for next week."),
+  ],
   ops: [
     step("Connect the accounts behind {goal}", "Bank, Stripe and invoicing linked; every payout matched to an invoice and the odd ones flagged here."),
     step("Chase what is past due", "A reminder in the client's own tone, one a week, escalated after the third with a call for you to make."),
@@ -241,4 +275,53 @@ export function planFor(kind, goal) {
   const about = short.length > 60 ? `${short.slice(0, 57)}…` : short;
   const fill = (s) => s.replace("{goal}", about);
   return (PLANS[kind] || PLANS.saas).map((s) => ({ title: fill(s.title), detail: fill(s.detail) }));
+}
+
+// ---- which kind a message is asking for, and why ----
+//
+// A chat's first message decides what its agent plans and what its rail
+// measures. The draft chat is minted before any text exists, so it used to
+// sit on the default template and every request got that archetype's plan:
+// a chess-site ask drew the YouTube one. classify() reads the message and
+// returns the archetype plus the cue words that picked it, so the choice can
+// be shown ("site: matched website, multiplayer, elo") instead of living in
+// an opaque score. It is the CLIENT's fallback only: when the live planner
+// answers, its own plan replaces this one and classify is not consulted.
+const KIND_CUES = {
+  site: ["website", "web site", "webpage", "web page", "landing page", "web app", "webapp", "site", "game", "games", "multiplayer", "matchmaking", "player", "players", "elo", "leaderboard", "tournament", "chess", "dashboard", "portal", "forum", "login", "sign in", "sign up", "account"],
+  newsletter: ["newsletter", "mailing list", "email list", "substack", "weekly note", "each issue"],
+  outreach: ["outreach", "cold email", "cold dm", "prospect", "prospects", "lead", "leads", "lead list", "discord server", "booked call", "reply rate"],
+  store: ["shopify", "store", "shop", "ecommerce", "e-commerce", "inventory", "merch", "cart", "order", "orders", "product page"],
+  ops: ["invoice", "invoices", "payout", "payouts", "bookkeeping", "accounting", "payroll", "reconcile", "reconciliation", "expenses", "cash flow"],
+  pipeline: ["scraper", "scrape", "scraping", "crawl", "pipeline", "etl", "ingest", "data feed", "backfill", "monitor", "dataset"],
+  research: ["research", "survey", "study", "field note", "observation", "census", "count the"],
+  channel: ["youtube", "video", "videos", "short", "shorts", "channel", "subscriber", "subscribers", "thumbnail", "upload", "footage", "vlog"],
+  saas: ["saas", "subscription", "startup", "mrr", "platform", "customer", "customers", "app"],
+};
+// first listed wins a tie: the narrower archetype before the broader one
+const KIND_ORDER = ["site", "newsletter", "outreach", "store", "ops", "pipeline", "research", "channel", "saas"];
+
+const cueTest = (s, cue) => new RegExp(`(^|[^a-z0-9])${cue.replace(/[^a-z0-9]+/g, "[^a-z0-9]+")}([^a-z0-9]|$)`).test(s);
+
+// classify(text) -> { kind, hits, because }
+export function classify(text) {
+  const s = String(text || "").toLowerCase();
+  let best = { kind: "", hits: [], score: 0 };
+  for (const kind of KIND_ORDER) {
+    const hits = (KIND_CUES[kind] || []).filter((cue) => cueTest(s, cue));
+    const score = hits.reduce((n, cue) => n + (cue.includes(" ") ? 2 : 1), 0);
+    if (score > best.score) best = { kind, hits, score };
+  }
+  if (!best.score) return { kind: "saas", hits: [], because: "no familiar cue, so the general product plan" };
+  return { kind: best.kind, hits: best.hits, because: `${best.kind}: matched ${best.hits.join(", ")}` };
+}
+
+// the client's own draft for a message, when no live plan answered: the
+// classified kind's plan with the request interpolated into it. store.setPlan
+// stamps it source "demo", so the card says a fixture drew it, never the
+// agent's own planner. The live path (POST /api/turn, the server's plan
+// event) supersedes this whenever it answers.
+export function planFromRequest(text) {
+  const picked = classify(text);
+  return { kind: picked.kind, because: picked.because, hits: picked.hits, steps: planFor(picked.kind, text) };
 }

@@ -11,18 +11,24 @@ import { icon, STRIPE_MARK, YOUTUBE_MARK } from "../icons.js";
 // the two brand marks the icon set carries by name: a connector manifest's
 // `mark` is what selects one, never a branch on the provider (doctrine 1)
 const BRAND_MARKS = { youtube: YOUTUBE_MARK, stripe: STRIPE_MARK };
-import { kindOf, planFor } from "../kinds.js";
+import { kindOf, planFromRequest } from "../kinds.js";
 import { MODES, agreePlan, busyBy, changePlan, claimDraft, connectorsPending, emit, get, isBusy, isRunning, project, projectMode, pushActivity, pushNotification, pushThread, setBusy, setPaused, setPlan, setProjectGoal, setProjectMode, setProjectModel, setupSteps, subscribe } from "../store.js";
 import { EASE_OUT, EASE_STD, MOD, announce, escapeHtml, formatMoney, formatNum, linkParts, reduceMotion, richText, uid, wait } from "../util.js";
 import { confirmDialog, mediaDialog, settle } from "./dialog.js";
 import { renderSetup, setupDoneMarkup } from "./setup.js";
 import { liveConnected, planLive, sendLive } from "../live.js";
 
-const THREAD_LIMIT = 80;
-// a long thread draws its last WINDOW items with one button above them for the
-// rest: thousands of cards in the DOM is what makes a scroll stutter, and the
-// reader is at the foot anyway. Loading earlier widens the window by another
-// one, so nothing is ever lost, only not drawn (SCOPE 8).
+// THE THREAD WINDOW: how many of the thread's items the page draws at once.
+// ONE number, read by both paths — the first paint draws the last WINDOW items,
+// and a live append trims the DOM back to the same WINDOW — so a thread that
+// arrived over SSE and one that was painted fresh hold exactly the same cards.
+// A second, smaller cap on the append path (it was 80) made those two disagree:
+// the streamed DOM silently dropped every beat older than the last 80 items,
+// while a reload/reconnect redrew the last 240, so the same run read back as two
+// different sequences. A long thread draws its last WINDOW items with one button
+// above them for the rest: thousands of cards in the DOM is what makes a scroll
+// stutter, and the reader is at the foot anyway. Loading earlier widens the
+// window by another one, so nothing is ever lost, only not drawn (SCOPE 8).
 const THREAD_WINDOW = 240;
 // what you typed and did not send, per chat: it is back in the box when
 // you return, and gone once it is sent
@@ -173,8 +179,16 @@ const planStepMarkup = (s) => (typeof s === "string" ? escapeHtml(s) : `<span cl
 export const planMarkup = (p) => {
   const plan = p.plan;
   if (!plan) return "";
-  return `<div class="app-plan panel${plan.agreed ? " is-agreed" : ""}" data-plan-card>
+  // a plan the client drew itself, because no live plan answered, must not
+  // read as the agent's own answer: the badge names it and says what words
+  // picked the archetype (store.claimDraft keeps that on p.kindWhy)
+  const demo = plan.source === "demo";
+  const demoLine = demo
+    ? `<div class="app-plan__demo" data-plan-demo>${icon("circle-alert")}Demo plan, drawn from your message. The live planner has not answered for this chat${p.kindWhy ? ` (${escapeHtml(p.kindWhy)})` : ""}.</div>`
+    : "";
+  return `<div class="app-plan panel${plan.agreed ? " is-agreed" : ""}" data-plan-card data-plan-source="${demo ? "demo" : "live"}">
   <div class="app-plan__head">${icon("compass")}<span class="app-plan__title">The plan</span>${plan.agreed ? `<span class="app-plan__state">${icon("check")}Agreed</span>` : ""}</div>
+  ${demoLine}
   <ol class="app-plan__steps">${plan.steps.map((s) => `<li>${planStepMarkup(s)}</li>`).join("")}${plan.changes.map((c) => `<li class="app-plan__change">${escapeHtml(c)}</li>`).join("")}</ol>
   ${plan.agreed ? `<div class="app-plan__foot"><span class="app-plan__approved">${icon("check")}Approved</span></div>` : `<div class="app-plan__foot"><button type="button" class="btn" data-plan-agree>Looks good, go ahead</button><span class="app-plan__hint">Or tell me what to change</span></div>`}
 </div>`;
@@ -223,7 +237,7 @@ export const connectableAction = (it) => {
 // Exported because the demo draws the SAME popup from the same action item
 // (SCOPE 5) — a hand-written copy in run.js is exactly how the two drift.
 export const actionPopMarkup = (item, { title = item.title } = {}) =>
-  `<span class="c-action__mark">${item.mark}</span><span class="c-action__title">${escapeHtml(title)}</span><span class="sr-only" role="status" data-action-reason></span><button type="button" class="c-action__btn" data-action-connect><span class="sr-only" data-action-name>Connect</span></button>`;
+  `<span class="c-action__mark">${item.mark}</span><span class="c-action__title">${escapeHtml(title)}</span><span class="sr-only" role="status" data-action-reason></span><button type="button" class="c-action__btn" data-action-connect></button>`;
 const actionKey = (it) => `${it.at || 0}:${it.title || ""}`;
 // actions settled this session (verified, done by hand or dismissed) never pop again
 const settledActions = new Set();
@@ -351,7 +365,12 @@ function threadMarkup(items) {
       flush();
       out += dayMarkup(it.n ?? it.day ?? "", it.label);
     }
-    else if (it.kind === "video" && liveCards(currentPlanId)) {
+    // a publish card is one card whatever the server called it: publishCard
+    // labels a video publish "video" and every other capability's publish
+    // "post", and both are the same artifact card — the video/publish card.
+    // Without this branch a "post" fell through to the user-bubble arm below
+    // and the run drew no publish card at all.
+    else if ((it.kind === "video" || it.kind === "post") && liveCards(currentPlanId)) {
       flush();
       out += videoMarkup({ ...it, thumb: videoThumb(currentPlanId, it) });
     }
@@ -437,8 +456,13 @@ export function renderChat(root, projectId) {
   const kind = kindOf(p().kind);
   let pendingAnswer = null;
   currentPlanId = projectId;
-  // what the thread draws: the tail of it, plus a button for the rest
-  let windowStart = Math.max(0, p().thread.length - THREAD_WINDOW);
+  // what the thread draws: the tail of it, plus a button for the rest.
+  // windowSize is how much of the thread is drawn at once — THREAD_WINDOW to
+  // start, and one more window each press of "Show earlier" (SCOPE 8). The prune
+  // below trims to windowSize, not to the base constant, so what a press reveals
+  // is not thrown away when the next live card lands.
+  let windowSize = THREAD_WINDOW;
+  let windowStart = Math.max(0, p().thread.length - windowSize);
   const earlierMarkup = () => (windowStart > 0 ? `<button type="button" class="btn btn--quiet c-thread__earlier" data-load-earlier><span class="btn__label">Show ${windowStart} earlier line${windowStart === 1 ? "" : "s"}</span></button>` : "");
   const threadHTML = () => `${earlierMarkup()}${threadMarkup(p().thread.slice(windowStart))}`;
   root.innerHTML = `<div class="c-chat app-chat" data-chat>
@@ -495,8 +519,21 @@ export function renderChat(root, projectId) {
     },
     { passive: true },
   );
+  // trims the DOM back to THREAD_WINDOW CARDS: the "Show earlier" button is the
+  // head of the thread when there is anything behind it and it is not a card, so
+  // it is stepped over rather than removed. Each card that falls off the front is
+  // one the button now stands in for, so windowStart advances with the trim — a
+  // long live run leaves the button's count true instead of stale, and a redraw
+  // from windowStart draws the same cards the stream left on screen.
+  const cardCount = () => thread.children.length - (thread.firstElementChild?.matches("[data-load-earlier]") ? 1 : 0);
   const prune = () => {
-    while (thread.children.length > THREAD_LIMIT) thread.firstElementChild.remove();
+    while (cardCount() > windowSize) {
+      const first = thread.firstElementChild;
+      const card = first?.matches("[data-load-earlier]") ? first.nextElementSibling : first;
+      if (!card) break;
+      card.remove();
+      windowStart += 1;
+    }
   };
   // Show earlier: widen the window by one and redraw, holding the reader's
   // place by the pixel they were standing on. The button is the whole feature:
@@ -504,6 +541,7 @@ export function renderChat(root, projectId) {
   thread.addEventListener("click", (e) => {
     if (!e.target.closest("[data-load-earlier]")) return;
     const wasAt = thread.scrollHeight - thread.scrollTop;
+    windowSize += THREAD_WINDOW;
     windowStart = Math.max(0, windowStart - THREAD_WINDOW);
     thread.innerHTML = threadHTML();
     mountSetups();
@@ -717,7 +755,7 @@ export function renderChat(root, projectId) {
       // the sim's tools stay off the stream; the strip above the composer still says what is running
       if (!form.dataset.busy) setNow(`Running ${item.name}`);
       return;
-    } else if (item.kind === "shot" || item.kind === "note" || item.kind === "day" || item.kind === "video") {
+    } else if (item.kind === "shot" || item.kind === "note" || item.kind === "day" || item.kind === "video" || item.kind === "post") {
       if (!liveCards(projectId)) return;
       liveTurn = null;
       removeThinking();
@@ -1411,7 +1449,10 @@ export function renderChat(root, projectId) {
         if (!p().plan?.agreed && !hasSetupCard()) {
           if (!p().plan) {
             if (!p().goal) setProjectGoal(projectId, text);
-            setPlan(projectId, planFor(p().kind, p().goal || text));
+            // the client's own fallback draft: classified from the request and
+            // stamped "demo", so the card says a fixture drew it. The live
+            // planner (POST /api/turn, the server's plan event) supersedes it.
+            setPlan(projectId, planFromRequest(p().goal || text).steps, "demo");
             input.placeholder = placeholderFor(p());
             await sayLine(`Here is the plan I would run for ${p().name}. Change anything you like, or say it looks good and I will ask for what I need to start.`);
             pushThread(projectId, { kind: "plan" }, { own: true });

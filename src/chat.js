@@ -8,7 +8,7 @@
 // come back.
 import { MODELS } from "../data.js";
 import { icon, YOUTUBE_MARK } from "../icons.js";
-import { kindOf, planFor } from "../kinds.js";
+import { kindOf, planFromRequest } from "../kinds.js";
 import { MODES, agreePlan, busyBy, changePlan, claimDraft, get, isBusy, isRunning, project, projectMode, pushActivity, pushNotification, pushThread, setBusy, setPaused, setPlan, setProjectGoal, setProjectMode, setProjectModel, setupSteps, subscribe } from "../store.js";
 import { EASE_OUT, EASE_STD, MOD, announce, escapeHtml, formatMoney, formatNum, linkParts, reduceMotion, relTime, richText, wait } from "../util.js";
 import { confirmDialog, mediaDialog, settle } from "./dialog.js";
@@ -171,8 +171,14 @@ const planStepMarkup = (s) => (typeof s === "string" ? escapeHtml(s) : `<span cl
 const planMarkup = (p) => {
   const plan = p.plan;
   if (!plan) return "";
-  return `<div class="app-plan panel${plan.agreed ? " is-agreed" : ""}" data-plan-card>
+  // a client-drawn plan says so: it is a fixture, not the agent's own answer
+  const demo = plan.source === "demo";
+  const demoLine = demo
+    ? `<div class="app-plan__demo" data-plan-demo>${icon("circle-alert")}Demo plan, drawn from your message. The live planner has not answered for this chat${p.kindWhy ? ` (${escapeHtml(p.kindWhy)})` : ""}.</div>`
+    : "";
+  return `<div class="app-plan panel${plan.agreed ? " is-agreed" : ""}" data-plan-card data-plan-source="${demo ? "demo" : "live"}">
   <div class="app-plan__head">${icon("compass")}<span class="app-plan__title">The plan</span>${plan.agreed ? `<span class="app-plan__state">${icon("check")}Agreed</span>` : ""}</div>
+  ${demoLine}
   <ol class="app-plan__steps">${plan.steps.map((s) => `<li>${planStepMarkup(s)}</li>`).join("")}${plan.changes.map((c) => `<li class="app-plan__change">${escapeHtml(c)}</li>`).join("")}</ol>
   ${plan.agreed ? `<div class="app-plan__foot"><span class="app-plan__approved">${icon("check")}Approved</span></div>` : `<div class="app-plan__foot"><button type="button" class="btn" data-plan-agree>Looks good, go ahead</button><span class="app-plan__hint">Or tell me what to change</span></div>`}
 </div>`;
@@ -810,7 +816,9 @@ export function renderChat(root, projectId) {
         if (!p().plan?.agreed && !hasSetupCard()) {
           if (!p().plan) {
             if (!p().goal) setProjectGoal(projectId, text);
-            setPlan(projectId, planFor(p().kind, p().goal || text));
+            // classified from the request and stamped "demo": a fixture the
+            // card labels, until a live plan answers
+            setPlan(projectId, planFromRequest(p().goal || text).steps, "demo");
             input.placeholder = placeholderFor(p());
             await sayLine(`Here is the plan I would run for ${p().name}. Change anything you like, or say it looks good and I will ask for what I need to start.`);
             pushThread(projectId, { kind: "plan" }, { own: true });

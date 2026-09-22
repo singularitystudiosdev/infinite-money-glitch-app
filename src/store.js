@@ -2,7 +2,7 @@
 // the actions that change it. Views subscribe to topics and patch the DOM
 // themselves; nothing here touches the document.
 import { CREDIT_PACKS, CREDITS_LOW, GLITCH_INSIGHTS, GLITCH_USERS, MISSION_POOL, NEW_THOUGHTS, QUICK_POOL, SEED_INVOICES, SEED_NEEDS, SEED_NOTIFICATIONS, SEED_PROJECTS, SEED_UNREAD, TEMPLATES } from "./data.js";
-import { KINDS, eventText, kindOf } from "./kinds.js";
+import { KINDS, classify, eventText, kindOf } from "./kinds.js";
 import { seeded, uid } from "./util.js";
 
 const KEY = "img.state.v4";
@@ -373,6 +373,9 @@ export function setPaused(id, on) {
 
 // draft: the one "new chat" that is not a project yet. It stays out of the
 // rail and the grid until its first message claims it (claimDraft)
+// the starting numbers a kind's tiles carry, before the sim moves them
+const emptyStats = (kind) => Object.fromEntries(kindOf(kind).tiles.filter((t) => t.id !== "revenue" && t.id !== "adSpend").map((t) => [t.id, t.format === "pct" ? t.base : 0]));
+
 export function createProject({ name, goal = "", template = "channel", draft = false }) {
   const clean = name.trim() || "New project";
   const n = state.projects.filter((p) => p.name.startsWith(clean)).length;
@@ -384,7 +387,7 @@ export function createProject({ name, goal = "", template = "channel", draft = f
     name: n && !draft ? `${clean} ${n + 1}` : clean,
     kind,
     template: kind,
-    stats: Object.fromEntries(kindOf(kind).tiles.filter((t) => t.id !== "revenue" && t.id !== "adSpend").map((t) => [t.id, t.format === "pct" ? t.base : 0])),
+    stats: emptyStats(kind),
     goal,
     createdAt: Date.now(),
     openedAt: Date.now(),
@@ -433,13 +436,26 @@ export function titleFrom(text) {
 }
 
 // the first message makes the draft a project: it gets a name from the
-// message, keeps the message as its brief, and takes its place in the rail
+// message, keeps the message as its brief, takes its kind from what the
+// message is asking for, and takes its place in the rail
 export function claimDraft(id, text) {
   const p = project(id);
   if (!p || !p.draft) return;
   p.draft = false;
   p.name = titleFrom(text);
   p.goal = p.goal || text.trim();
+  // the draft was minted before there was any text to read, so it sat on the
+  // default template and every request drew that archetype's plan. The first
+  // message picks the kind instead: classify() reads it, the reason it gives
+  // is kept on the project (p.kindWhy) and shown on the card when the plan is
+  // the client's own fallback. A live planner's plan overwrites this one.
+  const picked = classify(p.goal);
+  if (picked.kind !== p.kind) {
+    p.kind = picked.kind;
+    p.template = picked.kind;
+    p.stats = emptyStats(picked.kind);
+  }
+  p.kindWhy = picked.because;
   p.createdAt = Date.now();
   emit("projects", { claimed: id, renamed: id });
 }
@@ -599,11 +615,15 @@ export function setProjectGoal(id, goal) {
 
 // the plan drafted from the first message: its steps, the changes asked
 // for in the chat, and whether it has been agreed (which is when the
-// setup checklist follows)
-export function setPlan(id, steps) {
+// setup checklist follows).
+// source: "live" when the steps came from the agent's own planner (the
+// server's plan event, or the demo script); "demo" when the client drew them
+// from its fixture with planFor, because no live plan answered. The card
+// shows the difference, so a fixture is never read as the agent's answer.
+export function setPlan(id, steps, source = "live") {
   const p = project(id);
   if (!p) return;
-  p.plan = { steps, changes: [], agreed: false };
+  p.plan = { steps, changes: [], agreed: false, source };
   emit("plan", { id });
 }
 
