@@ -1,6 +1,11 @@
 node_modules/
 # demo recordings (record.mjs, POST /api/demo/record)
 .tmp/recordings/
+# P16's scratch: the probe scripts, the before/after recording pairs and the
+# per-scene shoots used to compare them. The PUBLISHABLE recordings are
+# assets/demo/<id>/demo.mp4; what is under here is working material and ~90 MB
+# of superseded video.
+.tmp/p16/
 # local dev state: throwaway MinIO data, the local media fallback, logs
 .tmp/minio-data/
 .tmp/logs/

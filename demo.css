@@ -570,6 +570,17 @@ body.is-demo-white .app-project.is-demo-intro .c-composer {
   height: 14px;
 }
 
+/* a 32px pill is fine under a mouse, not under the 44px touch floor on a
+   phone: at 390x844 this was the ONE control the audit caught below 44, on
+   every demo route. The arm is (pointer: coarse) OR a narrow viewport, which
+   is the app's own convention (styles.css raises --target the same way) and
+   the only arm that fires in a headless run, where the pointer reads fine. */
+@media (pointer: coarse), (max-width: 720px) {
+  .demo-record__btn {
+    min-height: 44px;
+  }
+}
+
 .demo-record__dot {
   color: #e5484d;
 }
